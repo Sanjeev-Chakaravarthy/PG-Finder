@@ -6,6 +6,7 @@ const Footer = () => {
     <footer className="border-t bg-muted/30">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
@@ -15,7 +16,7 @@ const Footer = () => {
               </span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Your trusted partner for premium PG and co-living spaces in Bangalore. Safe, comfortable, and affordable.
+              Premium and affordable PGs near Law Gate, LPU. Fully furnished rooms with AC, WiFi, geyser, RO, attached bathrooms, personal kitchen, and 24×7 power backup.
             </p>
             <div className="flex space-x-3">
               <a href="#" className="p-2 rounded-lg bg-background hover:bg-primary hover:text-primary-foreground transition-colors">
@@ -24,7 +25,7 @@ const Footer = () => {
               <a href="#" className="p-2 rounded-lg bg-background hover:bg-primary hover:text-primary-foreground transition-colors">
                 <Twitter className="h-4 w-4" />
               </a>
-              <a href="#" className="p-2 rounded-lg bg-background hover:bg-primary hover:text-primary-foreground transition-colors">
+              <a href="https://instagram.com" className="p-2 rounded-lg bg-background hover:bg-primary hover:text-primary-foreground transition-colors">
                 <Instagram className="h-4 w-4" />
               </a>
               <a href="#" className="p-2 rounded-lg bg-background hover:bg-primary hover:text-primary-foreground transition-colors">
@@ -56,11 +57,11 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4">Popular Areas</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="hover:text-primary transition-colors cursor-pointer">Koramangala</li>
-              <li className="hover:text-primary transition-colors cursor-pointer">HSR Layout</li>
-              <li className="hover:text-primary transition-colors cursor-pointer">Indiranagar</li>
-              <li className="hover:text-primary transition-colors cursor-pointer">Whitefield</li>
-              <li className="hover:text-primary transition-colors cursor-pointer">Electronic City</li>
+              <li className="hover:text-primary transition-colors cursor-pointer">Law Gate</li>
+              <li className="hover:text-primary transition-colors cursor-pointer">Cheema Park</li>
+              <li className="hover:text-primary transition-colors cursor-pointer">Maheru</li>
+              <li className="hover:text-primary transition-colors cursor-pointer">Empire Area</li>
+              <li className="hover:text-primary transition-colors cursor-pointer">LPU Main Gate</li>
             </ul>
           </div>
 
@@ -70,22 +71,36 @@ const Footer = () => {
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li className="flex items-start space-x-2">
                 <MapPin className="h-4 w-4 mt-0.5 text-primary" />
-                <span>Bangalore, Karnataka, India</span>
+                <span>Law Gate, Phagwara, Punjab, India</span>
               </li>
               <li className="flex items-center space-x-2">
                 <Phone className="h-4 w-4 text-primary" />
-                <a href="tel:+918123456789" className="hover:text-primary transition-colors">+91 81234 56789</a>
+                <a href="tel:+919447812177" className="hover:text-primary transition-colors">
+                  +91 94478 12177
+                </a>
+              </li>
+              <li className="flex items-center space-x-2">
+                <Phone className="h-4 w-4 text-primary" />
+                <a
+                  href="https://wa.me/919447812177"
+                  target="_blank"
+                  className="hover:text-primary transition-colors"
+                >
+                  WhatsApp Chat
+                </a>
               </li>
               <li className="flex items-center space-x-2">
                 <Mail className="h-4 w-4 text-primary" />
-                <a href="mailto:info@pghaven.com" className="hover:text-primary transition-colors">info@pghaven.com</a>
+                <a href="mailto:info@pghaven.com" className="hover:text-primary transition-colors">
+                  info@pghaven.com
+                </a>
               </li>
             </ul>
           </div>
         </div>
 
         <div className="mt-12 pt-6 border-t text-center text-sm text-muted-foreground">
-          <p>© 2024 PG Haven. All rights reserved. | Privacy Policy | Terms & Conditions</p>
+          <p>© 2025 PG Haven. All rights reserved. | Privacy Policy | Terms & Conditions</p>
         </div>
       </div>
     </footer>
