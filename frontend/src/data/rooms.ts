@@ -6,6 +6,13 @@ import roomSingle2Img from "@/assets/room-single2.jpg";
 import roomDouble2Img from "@/assets/room-double2.jpg";
 import roomTriple2Img from "@/assets/room-triple2.jpg";
 
+import yorStayVid1 from "@/assets/WhatsApp Video 2025-12-04 at 14.20.07 (1).mp4";
+import yorStayVid2 from "@/assets/WhatsApp Video 2025-12-04 at 14.20.07 (2).mp4";
+import yorStayVid3 from "@/assets/WhatsApp Video 2025-12-04 at 14.20.07.mp4";
+import yorStayVid4 from "@/assets/WhatsApp Video 2025-12-04 at 14.20.08 (1).mp4";
+import yorStayVid5 from "@/assets/WhatsApp Video 2025-12-04 at 14.20.08.mp4";
+import yorStayVid6 from "@/assets/WhatsApp Video 2025-12-04 at 14.20.09.mp4";
+
 export const rooms: Room[] = [
   {
     id: "1",
@@ -51,6 +58,7 @@ export const rooms: Room[] = [
     deposit: 20000,
     noticePeriod: 30,
   },
+
   {
     id: "2",
     name: "Oberoi Apartment – Fully Furnished Studio",
@@ -95,6 +103,7 @@ export const rooms: Room[] = [
     deposit: 18000,
     noticePeriod: 30,
   },
+
   {
     id: "3",
     name: "Empire – Double Sharing Room",
@@ -139,6 +148,7 @@ export const rooms: Room[] = [
     deposit: 16000,
     noticePeriod: 30,
   },
+
   {
     id: "4",
     name: "The Gulzar – Double Sharing Room",
@@ -183,6 +193,7 @@ export const rooms: Room[] = [
     deposit: 15000,
     noticePeriod: 30,
   },
+
   {
     id: "5",
     name: "Empire – Triple Sharing Budget Room",
@@ -227,6 +238,7 @@ export const rooms: Room[] = [
     deposit: 14000,
     noticePeriod: 15,
   },
+
   {
     id: "6",
     name: "Law Gate Deluxe Room – Near LPU",
@@ -269,6 +281,144 @@ export const rooms: Room[] = [
     rules: ["No smoking", "Visitors till 10 PM", "Keep room tidy"],
     foodMenu: ["Self cooking in personal kitchen"],
     deposit: 20000,
+    noticePeriod: 30,
+  },
+
+  {
+    id: "7",
+    name: "Gupta Apartment – Room Near ASG Foods",
+    location: "Near ASG Foods, Law Gate",
+    area: "Law Gate, Near LPU",
+    price: 7000,
+    occupancy: "Single",
+    gender: "Co-ed",
+    rating: 4.4,
+    reviews: 18,
+    image: roomSingleImg,
+    amenities: [
+      "Fully Furnished",
+      "AC",
+      "Geyser",
+      "RO Water",
+      "Free WiFi",
+      "Attached Bathroom"
+    ],
+    facilities: {
+      wifi: true,
+      ac: true,
+      food: false,
+      laundry: true,
+      parking: true,
+      gym: false,
+      cleaning: true,
+      security: true,
+    },
+    distance: {
+      metro: "N/A",
+      busStop: "Near ASG Foods, Law Gate",
+      office: "800m to LPU campus",
+    },
+    description:
+      "Budget single room in Gupta Apartment near ASG Foods – ideal for students looking for an affordable stay close to Law Gate.",
+    rules: ["No smoking", "Maintain cleanliness", "Respect neighbors"],
+    foodMenu: ["Self cooking (common / personal kitchen as available)"],
+    deposit: 12000,
+    noticePeriod: 30,
+  },
+
+  {
+    id: "8",
+    name: "Yash Tower – Room in Green Valley (Near Water Tank)",
+    location: "Yash Tower, Green Valley",
+    area: "Green Valley, Near Water Tank",
+    price: 10000,
+    occupancy: "Single",
+    gender: "Co-ed",
+    rating: 4.5,
+    reviews: 21,
+    image: roomDoubleImg,
+    amenities: [
+      "Fully Furnished",
+      "AC",
+      "Geyser",
+      "RO Water",
+      "TV",
+      "Fridge",
+      "Free WiFi",
+      "Attached Bathroom"
+    ],
+    facilities: {
+      wifi: true,
+      ac: true,
+      food: false,
+      laundry: true,
+      parking: true,
+      gym: false,
+      cleaning: true,
+      security: true,
+    },
+    distance: {
+      metro: "N/A",
+      busStop: "Near Water Tank, Green Valley",
+      office: "1km to LPU campus",
+    },
+    description:
+      "Fully furnished room in Yash Tower, Green Valley – near the Water Tank. Good option for students wanting a quieter locality.",
+    rules: ["No smoking", "No loud music after 11 PM", "Maintain hygiene"],
+    foodMenu: ["Self cooking in kitchen / pantry"],
+    deposit: 15000,
+    noticePeriod: 30,
+  },
+
+  {
+    id: "9",
+    name: "Yor Stay – Rooms Near LPU",
+    location: "Bhutani Colony & Near Blinkit Store, Law Gate",
+    area: "Law Gate, Near LPU",
+    price: 6500,
+    occupancy: "Single",
+    gender: "Co-ed",
+    rating: 4.4,
+    reviews: 24,
+
+    // Yor Stay uses ONLY videos
+    videos: [
+      yorStayVid1,
+      yorStayVid2,
+      yorStayVid3,
+      yorStayVid4,
+      yorStayVid5,
+      yorStayVid6,
+    ],
+
+    amenities: [
+      "Fully Furnished",
+      "AC",
+      "Geyser",
+      "RO Water",
+      "Free WiFi",
+      "Attached Bathroom"
+    ],
+    facilities: {
+      wifi: true,
+      ac: true,
+      food: false,
+      laundry: true,
+      parking: true,
+      gym: false,
+      cleaning: true,
+      security: true,
+    },
+    distance: {
+      metro: "N/A",
+      busStop: "Bhutani Colony / Near Blinkit Store, Law Gate",
+      office: "900m to LPU campus",
+    },
+    description:
+      "Yor Stay budget rooms available in Bhutani Colony (₹6500) and near Blinkit Store (₹7000). Student-friendly stay options close to Law Gate.",
+    rules: ["No smoking", "Maintain cleanliness", "Respect roommates"],
+    foodMenu: ["Self cooking or nearby tiffin services"],
+    deposit: 12000,
     noticePeriod: 30,
   },
 ];
