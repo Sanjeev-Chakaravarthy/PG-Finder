@@ -36,6 +36,13 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { rooms } from "@/data/rooms";
 
+// ⭐ SWIPER IMPORTS
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Pagination, Autoplay } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
+
 const Listings = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedArea, setSelectedArea] = useState<string>("all");
@@ -285,6 +292,7 @@ const Listings = () => {
         </div>
 
         <div className="flex gap-8">
+          {/* Sidebar */}
           <aside className="hidden md:block w-64 flex-shrink-0">
             <Card className="sticky top-20">
               <CardContent className="p-6">
@@ -296,6 +304,7 @@ const Listings = () => {
             </Card>
           </aside>
 
+          {/* Listings */}
           <div className="flex-1">
             {filteredRooms.length === 0 ? (
               <Card className="p-12 text-center">
@@ -309,17 +318,30 @@ const Listings = () => {
                     key={room.id}
                     className="group hover:shadow-large transition-all duration-300 hover:-translate-y-1 overflow-hidden"
                   >
-                    {/* 🔥 FIXED: VIDEO SUPPORT */}
+                    {/* ⭐ VIDEO + IMAGE SWIPER SLIDER FIXED ⭐ */}
                     <div className="relative w-full aspect-[16/9] overflow-hidden">
                       {room.videos && room.videos.length > 0 ? (
-                        <video
-                          src={room.videos[0]}
-                          controls
-                          muted
-                          loop
-                          autoPlay
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
+                        <Swiper
+                          modules={[Navigation, Pagination, Autoplay]}
+                          navigation
+                          pagination={{ clickable: true }}
+                          autoplay={{ delay: 3000 }}
+                          loop={true}
+                          className="w-full h-full"
+                        >
+                          {room.videos.map((vid, index) => (
+                            <SwiperSlide key={index}>
+                              <video
+                                src={vid}
+                                autoPlay
+                                muted
+                                loop
+                                playsInline
+                                className="absolute inset-0 w-full h-full object-cover"
+                              />
+                            </SwiperSlide>
+                          ))}
+                        </Swiper>
                       ) : (
                         <img
                           src={room.image}
@@ -356,9 +378,7 @@ const Listings = () => {
 
                       <div className="flex items-center mt-2 mb-3">
                         <Star className="h-4 w-4 fill-primary text-primary mr-1" />
-                        <span className="font-semibold mr-1">
-                          {room.rating}
-                        </span>
+                        <span className="font-semibold mr-1">{room.rating}</span>
                         <span className="text-sm text-muted-foreground">
                           ({room.reviews} reviews)
                         </span>
