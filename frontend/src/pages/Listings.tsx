@@ -15,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+
 import {
   Select,
   SelectContent,
@@ -40,28 +41,14 @@ const Listings = () => {
   const [selectedArea, setSelectedArea] = useState<string>("all");
   const [selectedOccupancy, setSelectedOccupancy] = useState<string>("all");
   const [selectedGender, setSelectedGender] = useState<string>("all");
-  const [priceRange, setPriceRange] = useState<[number, number]>([
-    5000,
-    20000,
-  ]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([5000, 20000]);
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("recommended");
   const [favorites, setFavorites] = useState<string[]>([]);
 
-  // ⭐ FINAL Correct Areas Based on Your Dataset
-  const areas = [
-    "Law Gate",
-    "Cheema Park",
-    "Maheru",
-    "Near LPU",
-    "Phagwara",
-    "Empire",
-  ];
-
-  // ⭐ amenities available in your dataset
+  const areas = ["Law Gate", "Cheema Park", "Maheru", "Near LPU", "Phagwara", "Empire"];
   const amenitiesFilter = ["WiFi", "AC", "Parking", "Laundry", "Gym"];
 
-  // ⭐ FULL FILTER FIX (includes logic)
   const filteredRooms = useMemo(() => {
     let filtered = rooms.filter((room) => {
       const searchLower = searchQuery.toLowerCase();
@@ -77,8 +64,7 @@ const Listings = () => {
         room.location.toLowerCase().includes(selectedArea.toLowerCase());
 
       const matchesOccupancy =
-        selectedOccupancy === "all" ||
-        room.occupancy === selectedOccupancy;
+        selectedOccupancy === "all" || room.occupancy === selectedOccupancy;
 
       const matchesGender =
         selectedGender === "all" ||
@@ -142,7 +128,6 @@ const Listings = () => {
 
   const FilterPanel = () => (
     <div className="space-y-6">
-      {/* Location Filter */}
       <div>
         <h3 className="font-semibold mb-3">Location</h3>
         <Select value={selectedArea} onValueChange={setSelectedArea}>
@@ -160,7 +145,6 @@ const Listings = () => {
         </Select>
       </div>
 
-      {/* Room Type */}
       <div>
         <h3 className="font-semibold mb-3">Room Type</h3>
         <Select
@@ -179,7 +163,6 @@ const Listings = () => {
         </Select>
       </div>
 
-      {/* Gender Filter */}
       <div>
         <h3 className="font-semibold mb-3">Gender</h3>
         <Select value={selectedGender} onValueChange={setSelectedGender}>
@@ -195,7 +178,6 @@ const Listings = () => {
         </Select>
       </div>
 
-      {/* Amenities */}
       <div>
         <h3 className="font-semibold mb-3">Amenities</h3>
         <div className="space-y-2">
@@ -214,7 +196,6 @@ const Listings = () => {
         </div>
       </div>
 
-      {/* Price Range */}
       <div>
         <h3 className="font-semibold mb-3">
           Price Range: ₹{priceRange[0]} - ₹{priceRange[1]}
@@ -253,7 +234,6 @@ const Listings = () => {
       <Header />
 
       <div className="container mx-auto px-4 py-8">
-        {/* Page Heading */}
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">
             Find Your Perfect PG Near LPU
@@ -263,7 +243,6 @@ const Listings = () => {
           </p>
         </div>
 
-        {/* Search + Sort */}
         <div className="flex flex-col md:flex-row gap-4 mb-8">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -287,7 +266,6 @@ const Listings = () => {
             </SelectContent>
           </Select>
 
-          {/* Mobile Filter Button */}
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" className="md:hidden">
@@ -306,9 +284,7 @@ const Listings = () => {
           </Sheet>
         </div>
 
-        {/* Layout */}
         <div className="flex gap-8">
-          {/* Desktop Filters */}
           <aside className="hidden md:block w-64 flex-shrink-0">
             <Card className="sticky top-20">
               <CardContent className="p-6">
@@ -320,7 +296,6 @@ const Listings = () => {
             </Card>
           </aside>
 
-          {/* Listings */}
           <div className="flex-1">
             {filteredRooms.length === 0 ? (
               <Card className="p-12 text-center">
@@ -334,13 +309,25 @@ const Listings = () => {
                     key={room.id}
                     className="group hover:shadow-large transition-all duration-300 hover:-translate-y-1 overflow-hidden"
                   >
-                    {/* Image */}
+                    {/* 🔥 FIXED: VIDEO SUPPORT */}
                     <div className="relative w-full aspect-[16/9] overflow-hidden">
-                      <img
-                        src={room.image}
-                        alt={room.name}
-                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
+                      {room.videos && room.videos.length > 0 ? (
+                        <video
+                          src={room.videos[0]}
+                          controls
+                          muted
+                          loop
+                          autoPlay
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      ) : (
+                        <img
+                          src={room.image}
+                          alt={room.name}
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                      )}
+
                       <button
                         onClick={() => toggleFavorite(room.id)}
                         className="absolute top-3 right-3 p-2 rounded-full bg-background/80 backdrop-blur"
