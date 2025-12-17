@@ -44,9 +44,9 @@ const Index = () => {
   // ⭐ Updated Stats for LAW GATE
   const stats = [
     { value: "5+", label: "Premium PGs", icon: Home },
-    { value: "500+", label: "Happy Residents", icon: Users },
+    { value: "300+", label: "Happy Residents", icon: Users },
     { value: "Law Gate", label: "Prime Location", icon: MapPin },
-    { value: "4.8", label: "Average Rating", icon: Star },
+    { value: "3.5", label: "Average Rating", icon: Star },
   ];
 
   // ⭐ Updated Testimonials for LAW GATE Students
