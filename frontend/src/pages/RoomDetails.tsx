@@ -1,524 +1,448 @@
-import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft,
-  MapPin,
-  Star,
-  Wifi,
-  Wind,
-  Utensils,
-  Car,
-  Dumbbell,
-  ShowerHead,
-  Shield,
-  Check,
-  X,
-  Phone,
-  MessageCircle,
-  Calendar,
+  ArrowLeft, MapPin, Star, Wifi, Wind, Utensils, Car, Dumbbell,
+  ShowerHead, Shield, Check, Phone, MessageCircle, Loader2, Trash2, Settings
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { rooms } from "@/data/rooms";
-import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
-// ⭐ SWIPER IMPORTS
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Pagination, Autoplay } from "swiper/modules";
-import "swiper/css";
-import "swiper/css/navigation";
-import "swiper/css/pagination";
-import "swiper/css/autoplay";
+// Helper for image URLs
+const getImageUrl = (imagePath: string) => {
+  if (!imagePath) return "https://via.placeholder.com/800x600?text=No+Image";
+  if (imagePath.startsWith("http")) return imagePath;
+  return `http://localhost:5001${imagePath}`;
+};
 
 const RoomDetails = () => {
   const { id } = useParams();
-  const room = rooms.find((r) => r.id === id);
+  const navigate = useNavigate();
+  const { user, token } = useAuth();
+  
+  const [room, setRoom] = useState<any>(null);
+  const [visitDate, setVisitDate] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  const [bookingForm, setBookingForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    moveInDate: "",
-    message: "",
-  });
+  useEffect(() => {
+    fetch(`http://localhost:5001/api/rooms/${id}`)
+      .then(res => res.json())
+      .then(data => {
+        setRoom(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, [id]);
 
-  if (!room) {
+  // --- ACTIONS ---
+
+  const handleBook = async () => {
+    if (!user) {
+      toast.error("Please login to book a visit!");
+      navigate("/login");
+      return;
+    }
+    if (!visitDate) {
+      toast.error("Please select a date for your visit.");
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const res = await fetch(`http://localhost:5001/api/rooms/book/${id}`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` 
+        },
+        body: JSON.stringify({ visitDate })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Visit Scheduled! Room marked as Booked.");
+        navigate(0); // Refresh page
+      } else {
+        toast.error(data.error || "Booking failed");
+      }
+    } catch (error) {
+      toast.error("Connection error");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!confirm("Are you sure you want to cancel this booking? The room will become available again.")) return;
+    
+    setActionLoading(true);
+    try {
+      const res = await fetch(`http://localhost:5001/api/rooms/cancel/${id}`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        toast.success("Booking Cancelled");
+        navigate(0);
+      } else {
+        toast.error("Failed to cancel");
+      }
+    } catch (error) {
+      toast.error("Error");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleOccupancy = async () => {
+    if (!confirm("Confirming payment means the user has moved in. This room will be removed from listings. Continue?")) return;
+
+    setActionLoading(true);
+    try {
+      const res = await fetch(`http://localhost:5001/api/rooms/occupy/${id}`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        toast.success("Room marked as Occupied!");
+        navigate("/my-listings");
+      } else {
+        toast.error("Failed to update status");
+      }
+    } catch (error) {
+      toast.error("Error");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteRoom = async () => {
+    const isConfirmed = window.confirm("⚠️ ARE YOU SURE? \nThis will permanently delete this PG listing from the website. This action cannot be undone.");
+    
+    if (!isConfirmed) return;
+
+    setActionLoading(true);
+    try {
+      const res = await fetch(`http://localhost:5001/api/rooms/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        toast.success("PG Listing Deleted Successfully");
+        navigate("/my-listings");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to delete");
+      }
+    } catch (error) {
+      toast.error("Connection Error");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Room Not Found</h1>
-          <Button asChild>
-            <Link to="/listings">Back to Listings</Link>
-          </Button>
-        </div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  const facilityIcons = {
-    wifi: <Wifi className="h-5 w-5" />,
-    ac: <Wind className="h-5 w-5" />,
-    food: <Utensils className="h-5 w-5" />,
-    laundry: <ShowerHead className="h-5 w-5" />,
-    parking: <Car className="h-5 w-5" />,
-    gym: <Dumbbell className="h-5 w-5" />,
-    cleaning: <ShowerHead className="h-5 w-5" />,
-    security: <Shield className="h-5 w-5" />,
+  if (!room) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+        <h1 className="text-2xl font-bold mb-4">Room Not Found</h1>
+        <Button asChild><Link to="/listings">Back to Search</Link></Button>
+      </div>
+    );
+  }
+
+  const facilityIcons: any = {
+    wifi: <Wifi className="h-5 w-5" />, ac: <Wind className="h-5 w-5" />, food: <Utensils className="h-5 w-5" />,
+    laundry: <ShowerHead className="h-5 w-5" />, parking: <Car className="h-5 w-5" />, gym: <Dumbbell className="h-5 w-5" />,
+    cleaning: <ShowerHead className="h-5 w-5" />, security: <Shield className="h-5 w-5" />
   };
 
-  const handleBooking = (e: React.FormEvent) => {
-    e.preventDefault();
-    toast.success("Booking request sent! We'll contact you shortly.");
-    setBookingForm({
-      name: "",
-      email: "",
-      phone: "",
-      moveInDate: "",
-      message: "",
-    });
-  };
+  const isOwner =
+    user &&
+    room?.ownerId &&
+    (room.ownerId._id === user.id || room.ownerId === user.id);
+  const isBooker = user && room.bookedBy && user.id === room.bookedBy._id;
+
+  // Determine Back Link
+  const backLink = isOwner ? "/my-listings" : "/listings";
+  const backText = isOwner ? "Back to My Listings" : "Back to Listings";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-12">
       <Header />
 
       <div className="container mx-auto px-4 py-8">
-        {/* Back Button */}
-        <Button variant="ghost" asChild className="mb-4 animate-fade-in">
-          <Link to="/listings">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Listings
+        <Button variant="ghost" asChild className="mb-4">
+          <Link to={backLink}>
+            <ArrowLeft className="h-4 w-4 mr-2" /> {backText}
           </Link>
         </Button>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* ⭐ IMAGE / VIDEO SLIDER */}
-            <Card className="overflow-hidden animate-fade-in-up">
-              {room.videos && room.videos.length > 0 ? (
-                <Swiper
-                  modules={[Navigation, Pagination, Autoplay]}
-                  navigation
-                  pagination={{ clickable: true }}
-                  autoplay={{ delay: 3000 }}
-                  loop={true}
-                  className="w-full h-[400px]"
-                >
-                  {room.videos.map((vid, index) => (
-                    <SwiperSlide key={index}>
-                      <video
-                        src={vid}
-                        autoPlay
-                        muted
-                        loop
-                        controls
-                        playsInline
-                        className="w-full h-[400px] object-cover rounded-lg"
-                      />
-                    </SwiperSlide>
-                  ))}
-                </Swiper>
-              ) : (
-                <img
-                  src={room.image}
+            
+            {/* FIXED IMAGE DISPLAY: Auto height, object-contain, no cropping */}
+            <Card className="overflow-hidden border-0 shadow-lg rounded-xl bg-black/5">
+               <img
+                  src={getImageUrl(room.image)}
                   alt={room.name}
-                  className="w-full h-[400px] object-cover"
+                  className="w-full h-auto max-h-[75vh] object-contain mx-auto"
                 />
-              )}
             </Card>
 
-            {/* Title */}
-            <div
-              className="animate-fade-in-up"
-              style={{ animationDelay: "100ms" }}
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h1 className="text-3xl font-bold mb-2">{room.name}</h1>
-                  <div className="flex items-center text-muted-foreground mb-2">
-                    <MapPin className="h-4 w-4 mr-1" />
-                    {room.location}
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center">
-                      <Star className="h-5 w-5 fill-primary text-primary mr-1" />
-                      <span className="font-semibold mr-1">
-                        {room.rating}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        ({room.reviews} reviews)
-                      </span>
-                    </div>
-                    <Badge variant="secondary">{room.occupancy}</Badge>
-                    <Badge variant="outline">{room.gender}</Badge>
-                  </div>
+            <div className="flex justify-between items-start px-1">
+              <div>
+                <h1 className="text-3xl font-bold mb-2">{room.name}</h1>
+                <div className="flex items-center text-muted-foreground mb-2">
+                  <MapPin className="h-4 w-4 mr-1" />
+                  {room.location}
                 </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold text-primary">
-                    ₹{room.price.toLocaleString()}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    per month
-                  </div>
+                <div className="flex items-center gap-4 mt-2">
+                   <Badge variant="secondary" className="px-3 py-1">{room.occupancy}</Badge>
+                   <Badge variant="outline" className="px-3 py-1">{room.gender}</Badge>
+                   <div className="flex items-center bg-yellow-50 px-2 py-1 rounded-md">
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
+                      <span className="font-semibold text-sm">{room.rating || 4.5}</span>
+                   </div>
                 </div>
               </div>
-              <Separator />
+              <div className="text-right p-2 bg-primary/5 rounded-lg">
+                <div className="text-3xl font-bold text-primary">
+                  ₹{room.price.toLocaleString()}
+                </div>
+                <div className="text-sm text-muted-foreground">per month</div>
+              </div>
             </div>
 
-            {/* Tabs Section */}
-            <Card
-              className="animate-fade-in-up"
-              style={{ animationDelay: "200ms" }}
-            >
+            {/* OWNER: Booking Request Panel */}
+            {isOwner && room.status === 'booked' && (
+              <Card className="bg-blue-50 border-blue-200 shadow-sm">
+                <CardHeader className="pb-3"><CardTitle className="text-blue-700 text-lg">Booking Request</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <p><strong>Booked By:</strong> {room.bookedBy?.name}</p>
+                        <p className="text-sm text-muted-foreground">{room.bookedBy?.email}</p>
+                        <p className="mt-2"><strong>Requested Visit Date:</strong> <Badge variant="outline" className="ml-2 bg-white">{room.visitDate}</Badge></p>
+                    </div>
+                    <div className="flex gap-3 mt-4 md:mt-0 w-full md:w-auto">
+                        <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 flex-1 md:flex-none" onClick={handleCancel}>Reject</Button>
+                        <Button className="bg-green-600 hover:bg-green-700 flex-1 md:flex-none" onClick={handleOccupancy}>Confirm Occupancy</Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card className="shadow-md rounded-xl border-0">
               <CardContent className="p-6">
-                <Tabs defaultValue="overview">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="amenities">Amenities</TabsTrigger>
-                    <TabsTrigger value="location">Location</TabsTrigger>
-                    <TabsTrigger value="rules">Rules</TabsTrigger>
+                <Tabs defaultValue="overview" className="w-full">
+                  {/* FIXED: Restored the background color class 'bg-muted' so tabs are visible */}
+                  <TabsList className="grid w-full grid-cols-3 mb-6 h-auto p-1 bg-muted rounded-lg">
+                    <TabsTrigger value="overview" className="py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">Overview</TabsTrigger>
+                    <TabsTrigger value="amenities" className="py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">Amenities</TabsTrigger>
+                    <TabsTrigger value="rules" className="py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">Rules</TabsTrigger>
                   </TabsList>
-
-                  {/* OVERVIEW */}
-                  <TabsContent value="overview" className="space-y-4 mt-4">
+                  
+                  <TabsContent value="overview" className="space-y-6 animate-in fade-in-50">
                     <div>
-                      <h3 className="font-semibold text-lg mb-2">
-                        About This Property
-                      </h3>
-                      <p className="text-muted-foreground">
-                        {room.description}
+                      <h3 className="font-semibold text-lg mb-3">About This Property</h3>
+                      <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap text-[15px]">
+                        {room.description || "No description provided by the owner."}
                       </p>
                     </div>
-
                     <Separator />
-
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-6 p-4 bg-muted/30 rounded-xl border">
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">
-                          Deposit
-                        </p>
-                        <p className="font-semibold">
-                          ₹{room.deposit.toLocaleString()}
-                        </p>
+                         <p className="text-sm text-muted-foreground mb-1">Security Deposit</p>
+                         <p className="font-semibold text-lg">₹{room.deposit ? room.deposit.toLocaleString() : "N/A"}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">
-                          Notice Period
-                        </p>
-                        <p className="font-semibold">
-                          {room.noticePeriod} days
-                        </p>
+                         <p className="text-sm text-muted-foreground mb-1">Notice Period</p>
+                         <p className="font-semibold text-lg">{room.noticePeriod || 30} Days</p>
                       </div>
                     </div>
-
-                    {room.foodMenu && (
-                      <>
-                        <Separator />
-                        <div>
-                          <h3 className="font-semibold mb-2">Food Included</h3>
-                          <div className="flex flex-wrap gap-2">
-                            {room.foodMenu.map((meal) => (
-                              <Badge key={meal} variant="secondary">
-                                {meal}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      </>
-                    )}
                   </TabsContent>
 
-                  {/* AMENITIES */}
-                  <TabsContent value="amenities" className="mt-4">
+                  <TabsContent value="amenities" className="mt-4 animate-in fade-in-50">
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {Object.entries(room.facilities).map(
-                        ([key, value]) => (
-                          <div
-                            key={key}
-                            className={`flex items-center space-x-3 p-3 rounded-lg border ${
-                              value
-                                ? "bg-success/5 border-success/20"
-                                : "bg-muted/50 border-border"
-                            }`}
-                          >
-                            {value ? (
-                              <Check className="h-5 w-5 text-success" />
-                            ) : (
-                              <X className="h-5 w-5 text-muted-foreground" />
-                            )}
-                            <div className="flex items-center space-x-2">
-                              {facilityIcons[
-                                key as keyof typeof facilityIcons
-                              ]}
-                              <span className="font-medium capitalize">
-                                {key}
-                              </span>
-                            </div>
-                          </div>
-                        )
-                      )}
-                    </div>
-
-                    <Separator className="my-4" />
-
-                    <div>
-                      <h3 className="font-semibold mb-3">
-                        Additional Amenities
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {room.amenities.map((amenity) => (
-                          <Badge key={amenity} variant="outline">
-                            {amenity}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  {/* LOCATION */}
-                  <TabsContent
-                    value="location"
-                    className="mt-4 space-y-4"
-                  >
-                    <div className="grid gap-3">
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                        <span className="text-sm font-medium">
-                          Metro Station
-                        </span>
-                        <Badge variant="secondary">
-                          {room.distance.metro}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                        <span className="text-sm font-medium">Bus Stop</span>
-                        <Badge variant="secondary">
-                          {room.distance.busStop}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                        <span className="text-sm font-medium">
-                          Office/IT Park
-                        </span>
-                        <Badge variant="secondary">
-                          {room.distance.office}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="bg-muted/30 rounded-lg p-4 text-center">
-                      <MapPin className="h-12 w-12 mx-auto mb-2 text-primary" />
-                      <p className="text-sm text-muted-foreground">
-                        Located in {room.area}, one of Law Gate's most
-                        connected areas
-                      </p>
-                    </div>
-                  </TabsContent>
-
-                  {/* RULES */}
-                  <TabsContent value="rules" className="mt-4">
-                    <ul className="space-y-2">
-                      {room.rules.map((rule, idx) => (
-                        <li
-                          key={idx}
-                          className="flex items-start space-x-2"
-                        >
-                          <Check className="h-5 w-5 text-primary mt-0.5" />
-                          <span>{rule}</span>
-                        </li>
+                      {room.facilities && Object.entries(room.facilities).map(([key, val]) => (
+                        <div key={key} className={`flex items-center space-x-3 p-4 rounded-xl border transition-colors ${val ? "bg-primary/5 border-primary/20" : "bg-gray-50 border-gray-100 opacity-60"}`}>
+                           <div className={`p-2 rounded-full ${val ? "bg-primary/10 text-primary" : "bg-gray-200 text-gray-400"}`}>
+                             {facilityIcons[key] || <Check className="h-5 w-5" />}
+                           </div>
+                           <span className="font-medium capitalize">{key}</span>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="rules" className="mt-4 animate-in fade-in-50">
+                     {room.rules && room.rules.length > 0 ? (
+                       <ul className="space-y-3 border rounded-xl p-6 bg-muted/10">
+                         {room.rules.map((rule: string, i: number) => (
+                           <li key={i} className="flex items-start">
+                               <Check className="h-5 w-5 mr-3 text-primary shrink-0 mt-0.5" /> 
+                               <span className="leading-tight">{rule}</span>
+                           </li>
+                         ))}
+                       </ul>
+                     ) : <div className="text-center py-8 text-muted-foreground bg-muted/30 rounded-xl">No specific house rules mentioned.</div>}
                   </TabsContent>
                 </Tabs>
               </CardContent>
             </Card>
           </div>
 
-          {/* Booking Sidebar */}
           <div className="lg:col-span-1">
-            <Card
-              className="sticky top-20 animate-fade-in-up"
-              style={{ animationDelay: "300ms" }}
-            >
-              <CardHeader>
-                <CardTitle>Book a Visit</CardTitle>
+            <Card className="sticky top-24 shadow-xl border-t-4 border-t-primary rounded-xl overflow-hidden">
+              <CardHeader className="bg-muted/20 pb-4">
+                <CardTitle>Owner Controls</CardTitle>
+                {isOwner && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Last updated: {new Date(room.updatedAt).toLocaleString()}
+                  </p>
+                )}
+                {!isOwner && (
+                  <CardTitle>
+                    {room.status === 'available' ? 'Book a Visit' : 'Status'}
+                  </CardTitle>
+                )}
               </CardHeader>
-
-              <CardContent>
-                <form onSubmit={handleBooking} className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Full Name *</Label>
-                    <Input
-                      id="name"
-                      required
-                      value={bookingForm.name}
-                      onChange={(e) =>
-                        setBookingForm({
-                          ...bookingForm,
-                          name: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      required
-                      value={bookingForm.email}
-                      onChange={(e) =>
-                        setBookingForm({
-                          ...bookingForm,
-                          email: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="phone">Phone Number *</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      required
-                      value={bookingForm.phone}
-                      onChange={(e) =>
-                        setBookingForm({
-                          ...bookingForm,
-                          phone: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="moveInDate">
-                      Preferred Move-in Date
-                    </Label>
-                    <Input
-                      id="moveInDate"
-                      type="date"
-                      value={bookingForm.moveInDate}
-                      onChange={(e) =>
-                        setBookingForm({
-                          ...bookingForm,
-                          moveInDate: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="message">Message</Label>
-                    <Textarea
-                      id="message"
-                      placeholder="Any special requirements?"
-                      value={bookingForm.message}
-                      onChange={(e) =>
-                        setBookingForm({
-                          ...bookingForm,
-                          message: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full bg-gradient-hero shadow-glow"
-                  >
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Schedule Visit
-                  </Button>
-                </form>
-
-                <Separator className="my-4" />
-
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full" asChild>
-                    <a href="tel:+918123456789">
-                      <Phone className="h-4 w-4 mr-2" />
-                      Call Now
-                    </a>
-                  </Button>
-
-                  <Button variant="outline" className="w-full" asChild>
-                    <a
-                      href={`https://wa.me/918123456789?text=Hi, I'm interested in ${room.name}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+              <CardContent className="space-y-6 pt-6">
+                
+                {/* OWNER VIEW */}
+                {isOwner && room?._id ? (
+                  <div className="space-y-6">
+                    <div className="p-4 bg-primary/5 rounded-lg flex items-start gap-3">
+                      <Settings className="h-6 w-6 text-primary mt-1" />
+                      <div>
+                          <p className="font-medium">Managing Property</p>
+                          <p className="text-sm text-muted-foreground leading-tight">You are viewing your listing. Use the dashboard for more options.</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      className="w-full py-6 text-md"
+                      disabled={room.status === "occupied"}
+                      title={room.status === "occupied" ? "Occupied rooms cannot be edited" : "Edit Property"}
+                      onClick={() => {
+                        if (room.status !== "occupied") {
+                          navigate(`/edit-room/${room._id}`);
+                        }
+                      }}
                     >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      WhatsApp
-                    </a>
-                  </Button>
-                </div>
+                      <Settings className="h-5 w-5 mr-2" />
+                      {room.status === "occupied" ? "Editing Locked" : "Edit Property Details"}
+                    </Button>
+
+                    <Button
+                      variant="destructive"
+                      className="w-full py-6 text-md"
+                      onClick={handleDeleteRoom}
+                      disabled={actionLoading}
+                    >
+                      <Trash2 className="h-5 w-5 mr-2" /> Delete Property Listing
+                    </Button>
+                  </div>
+                ) : (
+                  // USER VIEW
+                  <>
+                    {room.status === 'available' ? (
+                      <>
+                        <div>
+                            <label className="text-sm font-medium mb-2 block">Select Visit Date</label>
+                            <Input type="date" onChange={(e) => setVisitDate(e.target.value)} className="mb-4 py-6 text-lg" />
+                        </div>
+                        <Button onClick={handleBook} className="w-full bg-gradient-hero shadow-glow py-6 text-lg" disabled={actionLoading}>
+                          {actionLoading ? "Scheduling..." : "Schedule Free Visit"}
+                        </Button>
+                        <p className="text-xs text-center text-muted-foreground mt-2">No payment required for booking.</p>
+                      </>
+                    ) : (
+                      <div className="text-center p-6 bg-muted/30 rounded-lg">
+                        {room.status === 'booked' && (
+                          <Badge className="text-lg mb-4 px-4 py-2 bg-yellow-500 text-black">
+                            Pending Approval
+                          </Badge>
+                        )}
+                        {room.status === 'occupied' && (
+                          <Badge className="text-lg mb-4 px-4 py-2 bg-green-600 text-white">
+                            Reserved
+                          </Badge>
+                        )}
+                        {room.status === 'booked' && <p className="text-sm text-muted-foreground">Visit scheduled for: <strong>{room.visitDate}</strong></p>}
+                        
+                        {isBooker && (
+                          <div className="mt-6">
+                            <p className="text-sm text-green-600 font-medium mb-4 flex justify-center items-center"><Check className="h-4 w-4 mr-1"/> You reserved this!</p>
+                            <Button variant="outline" className="w-full border-red-200 text-red-600 hover:bg-red-50" onClick={handleCancel}>Cancel Reservation</Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    <Separator className="my-4" />
+                    {room.status !== "occupied" && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button
+                          variant="outline"
+                          className="w-full py-6"
+                          asChild
+                          disabled={!room.ownerPhone}
+                        >
+                          <a href={`tel:${room.ownerPhone}`}>
+                            <Phone className="h-5 w-5 mr-2" /> Call Agent
+                          </a>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="w-full py-6"
+                          asChild
+                          disabled={!room.ownerWhatsapp}
+                        >
+                          <a
+                            href={`https://wa.me/91${room.ownerWhatsapp}?text=Hi, I am interested in your PG: ${room.name}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <MessageCircle className="h-5 w-5 mr-2" /> Chat
+                          </a>
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
         </div>
-
-        {/* Similar Properties */}
-        <div
-          className="mt-12 animate-fade-in-up"
-          style={{ animationDelay: "400ms" }}
-        >
-          <h2 className="text-2xl font-bold mb-6">
-            Similar Properties
-          </h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            {rooms
-              .filter((r) => r.id !== room.id && r.area === room.area)
-              .slice(0, 3)
-              .map((similarRoom) => (
-                <Card
-                  key={similarRoom.id}
-                  className="hover:shadow-large transition-all duration-300"
-                >
-                  <img
-                    src={similarRoom.image}
-                    alt={similarRoom.name}
-                    className="w-full h-40 object-cover rounded-t-lg"
-                  />
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold mb-2">
-                      {similarRoom.name}
-                    </h3>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xl font-bold text-primary">
-                        ₹{similarRoom.price.toLocaleString()}
-                      </span>
-                      <Button size="sm" variant="outline" asChild>
-                        <Link to={`/room/${similarRoom.id}`}>
-                          View
-                        </Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-          </div>
-        </div>
       </div>
-
       <Footer />
     </div>
   );
 };
 
-export default RoomDetails;
+export default RoomDetails; 
