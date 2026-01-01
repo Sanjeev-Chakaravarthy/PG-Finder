@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 
 const AddRoom = () => {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const { token, user, loading } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -95,7 +96,7 @@ const AddRoom = () => {
 
     const fetchRoom = async () => {
       try {
-        const res = await fetch(`http://localhost:5001/api/rooms/${id}`, {
+        const res = await fetch(`${API_BASE_URL}/api/rooms/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -122,7 +123,7 @@ const AddRoom = () => {
 
         setFacilities(data.facilities || {});
         setRules(data.rules || []);
-        setPreviewUrl(data.image ? `http://localhost:5001${data.image}` : null);
+        setPreviewUrl(data.image ? `${API_BASE_URL}${data.image}` : null);
 
         setRoomStatus(data.status);
         setLastUpdated(data.updatedAt || null);
@@ -143,7 +144,7 @@ const AddRoom = () => {
           },
           facilities: data.facilities || {},
           rules: data.rules || [],
-          previewUrl: data.image ? `http://localhost:5001${data.image}` : null,
+          previewUrl: data.image ? `${API_BASE_URL}${data.image}` : null,
         });
       } catch {
         toast.error("Error loading room");
@@ -221,8 +222,8 @@ const AddRoom = () => {
 
     try {
       const url = isEdit
-        ? `http://localhost:5001/api/rooms/${id}`
-        : "http://localhost:5001/api/rooms";
+        ? `${API_BASE_URL}/api/rooms/${id}`
+        : `${API_BASE_URL}/api/rooms`;
 
       const method = isEdit ? "PUT" : "POST";
 

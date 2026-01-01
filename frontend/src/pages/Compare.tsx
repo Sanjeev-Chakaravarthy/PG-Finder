@@ -41,10 +41,12 @@ interface ComparisonMetrics {
   safety: number;
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const getImageUrl = (image?: string) => {
   if (!image) return "https://via.placeholder.com/400x300?text=No+Image";
   if (image.startsWith("http")) return image;
-  return `http://localhost:5001${image}`;
+  return `${API_BASE_URL}${image}`;
 };
 
 const Compare = () => {
@@ -53,7 +55,7 @@ const Compare = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:5001/api/rooms")
+    fetch(`${API_BASE_URL}/api/rooms`)
       .then(res => res.json())
       .then(data => {
         setRooms(data);

@@ -15,10 +15,11 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { toast } from "sonner";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const getImageUrl = (path: string) => {
   if (!path) return "https://via.placeholder.com/400x300?text=No+Screenshot";
   if (path.startsWith("http")) return path;
-  return `http://localhost:5001${path}`;
+  return `${API_BASE_URL}${path}`;
 };
 
 const OwnerDashboard = () => {
@@ -40,7 +41,7 @@ const OwnerDashboard = () => {
   const fetchData = async () => {
     try {
       // Fetch Listings
-      const listingsRes = await fetch("http://localhost:5001/api/rooms/my-listings", {
+      const listingsRes = await fetch(`${API_BASE_URL}/api/rooms/my-listings`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       
@@ -67,7 +68,7 @@ const OwnerDashboard = () => {
       }
 
       // Fetch All Payments for Owner's Properties
-      const paymentsRes = await fetch("http://localhost:5001/api/rooms/owner/payments", {
+      const paymentsRes = await fetch(`${API_BASE_URL}/api/rooms/owner/payments`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
 
@@ -94,7 +95,7 @@ const OwnerDashboard = () => {
   const handleVerifyPayment = async (paymentId: string, status: 'verified' | 'rejected') => {
     setIsProcessing(true);
     try {
-      const res = await fetch(`http://localhost:5001/api/rooms/owner/verify-payment/${paymentId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/rooms/owner/verify-payment/${paymentId}`, {
         method: "PATCH",
         headers: { 
           "Content-Type": "application/json",

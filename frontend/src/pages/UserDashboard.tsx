@@ -14,10 +14,11 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const getImageUrl = (path: string) => {
     if (!path) return "https://via.placeholder.com/400x300?text=No+Image";
     if (path.startsWith("http")) return path;
-    return `http://localhost:5001${path}`;
+    return `${API_BASE_URL}${path}`;
 };
 
 const UserDashboard = () => {
@@ -47,7 +48,7 @@ const UserDashboard = () => {
     const fetchData = async () => {
       try {
         // Fetch My Room
-        const roomRes = await fetch("http://localhost:5001/api/rooms/my-stay", {
+        const roomRes = await fetch(`${API_BASE_URL}/api/rooms/my-stay`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         
@@ -61,7 +62,7 @@ const UserDashboard = () => {
         }
 
         // Fetch Payments
-        const payRes = await fetch("http://localhost:5001/api/rooms/payments", {
+        const payRes = await fetch(`${API_BASE_URL}/api/rooms/payments`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         
@@ -110,7 +111,7 @@ const UserDashboard = () => {
       formData.append("month", paymentMonth);
       formData.append("screenshot", screenshotFile);
 
-      const res = await fetch("http://localhost:5001/api/rooms/pay-rent", {
+      const res = await fetch(`${API_BASE_URL}/api/rooms/pay-rent`, {
         method: "POST",
         headers: { 
           "Authorization": `Bearer ${token}` 
@@ -127,7 +128,7 @@ const UserDashboard = () => {
         setScreenshotPreview(null);
         
         // Refresh payments history
-        const payRes = await fetch("http://localhost:5001/api/rooms/payments", {
+        const payRes = await fetch(`${API_BASE_URL}/api/rooms/payments`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (payRes.ok) {

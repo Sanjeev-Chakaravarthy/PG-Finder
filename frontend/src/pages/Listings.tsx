@@ -21,11 +21,14 @@ import {
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
+// API base URL from Vite env
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 // Helper for image URLs
 const getImageUrl = (imagePath: string) => {
   if (!imagePath) return "https://via.placeholder.com/400x300?text=No+Image";
   if (imagePath.startsWith("http")) return imagePath; // External link
-  return `http://localhost:5001${imagePath}`; // Backend local file
+  return `${API_BASE_URL}${imagePath}`; // Backend file via ENV
 };
 
 interface Room {
@@ -66,8 +69,8 @@ const Listings = () => {
 
   const amenitiesFilter = ["wifi", "ac", "parking", "laundry", "gym"];
 
-  useEffect(() => {
-    fetch("http://localhost:5001/api/rooms")
+useEffect(() => {
+    fetch(`${API_BASE_URL}/api/rooms`)
       .then(res => res.json())
       .then(data => {
         setRooms(data);
