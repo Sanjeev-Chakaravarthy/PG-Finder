@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FcGoogle } from "react-icons/fc";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,12 @@ import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const Signup = () => {
+  const handleGoogleSignup = () => {
+    window.location.href = `${API_BASE_URL}/api/auth/google`;
+  };
   const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "user" });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -19,7 +25,7 @@ const Signup = () => {
     setIsLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5001/api/auth/signup", {
+      const res = await fetch(`${API_BASE_URL}/api/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -34,7 +40,7 @@ const Signup = () => {
         toast.error(data.error || "Signup failed");
       }
     } catch (error) {
-      toast.error("Network error. Is the backend server running on port 5001?");
+      toast.error("Network error. Unable to reach the server.");
     } finally {
       setIsLoading(false);
     }
@@ -52,6 +58,27 @@ const Signup = () => {
             </p>
           </CardHeader>
           <CardContent>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full mb-4 flex items-center justify-center gap-2"
+              onClick={handleGoogleSignup}
+            >
+              <FcGoogle className="h-5 w-5" />
+              Continue with Google
+            </Button>
+
+            <div className="relative mb-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  or sign up with email
+                </span>
+              </div>
+            </div>
+
             <form onSubmit={handleSignup} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>

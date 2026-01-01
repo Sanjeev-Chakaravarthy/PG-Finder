@@ -8,8 +8,14 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { FcGoogle } from "react-icons/fc";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const Login = () => {
+  const handleGoogleLogin = () => {
+    window.location.href = `${API_BASE_URL}/api/auth/google`;
+  };
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -21,8 +27,8 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      // NOTE: Using port 5001 as requested
-      const res = await fetch("http://localhost:5001/api/auth/login", {
+      // NOTE: Using API_BASE_URL from environment variable
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -38,7 +44,7 @@ const Login = () => {
         toast.error(data.error || "Login failed");
       }
     } catch (error) {
-      toast.error("Network error. Is the backend server running on port 5001?");
+      toast.error("Network error. Please check backend connection.");
     } finally {
       setIsLoading(false);
     }
@@ -56,6 +62,27 @@ const Login = () => {
             </p>
           </CardHeader>
           <CardContent>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full mb-4 flex items-center justify-center gap-2"
+              onClick={handleGoogleLogin}
+            >
+              <FcGoogle className="h-5 w-5" />
+              Continue with Google
+            </Button>
+
+            <div className="relative mb-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  or continue with email
+                </span>
+              </div>
+            </div>
+
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>

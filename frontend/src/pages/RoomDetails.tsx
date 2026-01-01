@@ -15,11 +15,12 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // Helper for image URLs
 const getImageUrl = (imagePath: string) => {
   if (!imagePath) return "https://via.placeholder.com/800x600?text=No+Image";
   if (imagePath.startsWith("http")) return imagePath;
-  return `http://localhost:5001${imagePath}`;
+  return `${API_BASE_URL}${imagePath}`;
 };
 
 const RoomDetails = () => {
@@ -33,7 +34,7 @@ const RoomDetails = () => {
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
-    fetch(`http://localhost:5001/api/rooms/${id}`)
+    fetch(`${API_BASE_URL}/api/rooms/${id}`)
       .then(res => res.json())
       .then(data => {
         setRoom(data);
@@ -60,7 +61,7 @@ const RoomDetails = () => {
 
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:5001/api/rooms/book/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/rooms/book/${id}`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -88,7 +89,7 @@ const RoomDetails = () => {
     
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:5001/api/rooms/cancel/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/rooms/cancel/${id}`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -111,7 +112,7 @@ const RoomDetails = () => {
 
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:5001/api/rooms/occupy/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/rooms/occupy/${id}`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -136,7 +137,7 @@ const RoomDetails = () => {
 
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:5001/api/rooms/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/rooms/${id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });

@@ -9,10 +9,12 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const getImageUrl = (imagePath: string) => {
   if (!imagePath) return "https://via.placeholder.com/400x300?text=No+Image";
   if (imagePath.startsWith("http")) return imagePath;
-  return `http://localhost:5001${imagePath}`;
+  return `${API_BASE_URL}${imagePath}`;
 };
 
 const MyListings = () => {
@@ -25,7 +27,7 @@ const MyListings = () => {
   const fetchRooms = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5001/api/rooms/my-listings", {
+      const res = await fetch(`${API_BASE_URL}/api/rooms/my-listings`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (!res.ok) {
@@ -59,7 +61,7 @@ const MyListings = () => {
   const handleDelete = async (id: string) => {
     if(!confirm("Are you sure?")) return;
     try {
-      const res = await fetch(`http://localhost:5001/api/rooms/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/rooms/${id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });

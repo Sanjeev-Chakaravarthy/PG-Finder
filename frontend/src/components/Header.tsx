@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, Home, Phone, PlusCircle, LogOut, LayoutDashboard, Building2, PieChart, User } from "lucide-react";
+import { Menu, X, Home, PlusCircle, LogOut, LayoutDashboard, Building2, PieChart, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -92,9 +92,6 @@ const Header = () => {
           {/* USER ONLY */}
           {!isOwner && (
             <>
-              <Button variant="ghost" size="sm" asChild className="hidden lg:flex">
-                <a href="tel:+919447812177"><Phone className="h-4 w-4 mr-2" /> Call Us</a>
-              </Button>
               <Button size="sm" className="bg-gradient-hero shadow-glow" asChild>
                 <Link to="/listings">Book Now</Link>
               </Button>
@@ -192,7 +189,6 @@ const Header = () => {
             <div className="pt-4 border-t space-y-2">
               {!isOwner && (
                 <>
-                  <Button variant="outline" size="sm" className="w-full" asChild><a href="tel:+919447812177"><Phone className="h-4 w-4 mr-2" /> Call Us</a></Button>
                   <Button size="sm" className="w-full bg-gradient-hero" asChild><Link to="/listings" onClick={() => setMobileMenuOpen(false)}>Book Now</Link></Button>
                 </>
               )}
