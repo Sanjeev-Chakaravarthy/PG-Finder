@@ -16,7 +16,7 @@ const Footer = () => {
               </span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Premium and affordable PGs near Law Gate, LPU. Fully furnished rooms with AC, WiFi, geyser, RO, attached bathrooms, personal kitchen, and 24×7 power backup.
+              India's fastest growing co-living network. We provide safe, fully furnished, and affordable PGs for students and professionals across the country.
             </p>
             <div className="flex space-x-3">
               <a href="#" className="p-2 rounded-lg bg-background hover:bg-primary hover:text-primary-foreground transition-colors">
@@ -53,15 +53,15 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Popular Areas */}
+          {/* Popular Cities (Updated from local areas) */}
           <div>
-            <h3 className="font-semibold mb-4">Popular Areas</h3>
+            <h3 className="font-semibold mb-4">Popular Cities</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="hover:text-primary transition-colors cursor-pointer">Law Gate</li>
-              <li className="hover:text-primary transition-colors cursor-pointer">Cheema Park</li>
-              <li className="hover:text-primary transition-colors cursor-pointer">Maheru</li>
-              <li className="hover:text-primary transition-colors cursor-pointer">Empire Area</li>
-              <li className="hover:text-primary transition-colors cursor-pointer">LPU Main Gate</li>
+              <li className="hover:text-primary transition-colors cursor-pointer">Delhi NCR</li>
+              <li className="hover:text-primary transition-colors cursor-pointer">Mumbai</li>
+              <li className="hover:text-primary transition-colors cursor-pointer">Bangalore</li>
+              <li className="hover:text-primary transition-colors cursor-pointer">Pune</li>
+              <li className="hover:text-primary transition-colors cursor-pointer">Hyderabad</li>
             </ul>
           </div>
 
@@ -71,7 +71,7 @@ const Footer = () => {
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li className="flex items-start space-x-2">
                 <MapPin className="h-4 w-4 mt-0.5 text-primary" />
-                <span>Law Gate, Phagwara, Punjab, India</span>
+                <span>Corporate Office, Punjab, India</span>
               </li>
               <li className="flex items-center space-x-2">
                 <Phone className="h-4 w-4 text-primary" />
