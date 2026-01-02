@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
-  Filter, MapPin, Star, Search, SlidersHorizontal, Heart, Loader2
+  Filter, MapPin, Search, SlidersHorizontal, Heart, Loader2
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -78,15 +78,30 @@ const Listings = () => {
         return res.json();
       })
       .then(data => {
-        const roomsWithMedia = data.map((room: any) => ({
-          ...room,
-          media: room.media && Array.isArray(room.media) && room.media.length > 0 
-            ? room.media 
-            : room.image 
-              ? [room.image] 
-              : []
-        }));
+        console.log("Raw API Response (Listings):", data);
         
+        const roomsWithMedia = data.map((room: any) => {
+          console.log("Processing room:", {
+            id: room._id,
+            name: room.name,
+            hasMedia: !!room.media,
+            mediaLength: room.media?.length,
+            media: room.media,
+            hasImage: !!room.image,
+            image: room.image
+          });
+          
+          return {
+            ...room,
+            media: room.media && Array.isArray(room.media) && room.media.length > 0 
+              ? room.media 
+              : room.image 
+                ? [room.image] 
+                : []
+          };
+        });
+        
+        console.log("Processed rooms with media:", roomsWithMedia);
         setRooms(roomsWithMedia);
 
         if (Array.isArray(roomsWithMedia) && roomsWithMedia.length > 0) {
@@ -303,7 +318,31 @@ const Listings = () => {
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredRooms.map((room) => {
-                  const coverImage = room.media && room.media.length > 0 ? room.media[0] : room.image;
+                  // Helper function to check if a file is a video
+                  const isVideoFile = (path: string) => {
+                    if (!path) return false;
+                    return /\.(mp4|mov|webm|avi)$/i.test(path);
+                  };
+
+                  // Get the first IMAGE from media array (skip videos for thumbnail)
+                  let coverImage = "";
+                  if (room.media && room.media.length > 0) {
+                    // Find first image (non-video) in media array
+                    coverImage = room.media.find((media: string) => !isVideoFile(media)) || room.media[0];
+                  } else if (room.image) {
+                    coverImage = room.image;
+                  }
+
+                  const finalUrl = getMediaUrl(coverImage);
+                  
+                  console.log("Rendering room card:", {
+                    roomId: room._id,
+                    roomName: room.name,
+                    coverImage,
+                    finalUrl,
+                    mediaArray: room.media,
+                    isVideo: isVideoFile(coverImage)
+                  });
 
                   return (
                     <Link key={room._id} to={`/room/${room._id}`}>
@@ -311,10 +350,21 @@ const Listings = () => {
                         {/* Image Section */}
                         <div className="relative w-full aspect-[4/3] overflow-hidden bg-gray-50">
                           <img
-                            src={getMediaUrl(coverImage)}
+                            src={finalUrl}
                             alt={room.name}
                             className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                            onLoad={(e) => {
+                              console.log("Image loaded successfully:", finalUrl);
+                            }}
                             onError={(e) => {
+                              console.error('Image failed to load:', {
+                                roomId: room._id,
+                                roomName: room.name,
+                                coverImage,
+                                finalUrl,
+                                mediaArray: room.media,
+                                imageAttr: room.image
+                              });
                               e.currentTarget.src = "https://via.placeholder.com/400x300?text=No+Image";
                             }}
                           />
@@ -341,20 +391,12 @@ const Listings = () => {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 mb-3">
+                          <div className="flex items-center gap-2 mb-4">
                             <Badge variant="secondary" className="text-xs px-2 py-0.5">{room.occupancy}</Badge>
                             <Badge variant="outline" className="text-xs px-2 py-0.5">{room.gender}</Badge>
                             {room.status === 'booked' && (
                               <Badge variant="destructive" className="text-xs px-2 py-0.5">Reserved</Badge>
                             )}
-                          </div>
-
-                          <div className="flex items-center mb-3">
-                            <div className="flex items-center bg-green-50 px-2 py-1 rounded">
-                              <Star className="h-3 w-3 fill-green-600 text-green-600 mr-1" />
-                              <span className="text-xs font-semibold">{room.rating || 4.5}</span>
-                            </div>
-                            <span className="text-xs text-muted-foreground ml-2">({room.reviews || 0})</span>
                           </div>
 
                           <div className="flex items-center justify-between pt-3 border-t">
