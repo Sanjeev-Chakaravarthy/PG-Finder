@@ -19,4 +19,7 @@ pnpm-debug.log*
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+*.sw?node_modules/
+.env
+node_modules/
+.env
