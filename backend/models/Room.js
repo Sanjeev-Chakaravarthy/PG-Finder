@@ -21,6 +21,13 @@ const roomSchema = new mongoose.Schema({
   occupancy: { type: String, required: true },
   gender: { type: String, required: true },
   description: { type: String },
+
+  // 🆕 NEW: Multiple media support (images/videos)
+  media: {
+    type: [String],
+    default: [],
+  },
+  // Backward compatibility (cover image)
   image: { type: String },
   
   // NEW: Payment QR Code Path

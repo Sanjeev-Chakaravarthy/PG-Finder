@@ -12,7 +12,7 @@ const Footer = () => {
             <div className="flex items-center space-x-2">
               <Home className="h-6 w-6 text-primary" />
               <span className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-                PG Haven
+                PG Finder
               </span>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -100,7 +100,7 @@ const Footer = () => {
         </div>
 
         <div className="mt-12 pt-6 border-t text-center text-sm text-muted-foreground">
-          <p>© 2025 PG Haven. All rights reserved. | Privacy Policy | Terms & Conditions</p>
+          <p>© 2025 PG Finder. All rights reserved. | Privacy Policy | Terms & Conditions</p>
         </div>
       </div>
     </footer>
