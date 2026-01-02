@@ -14,8 +14,7 @@ import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import API_BASE_URL from "@/config/api";
 // Helper for image URLs
 const getImageUrl = (imagePath: string) => {
   if (!imagePath) return "https://via.placeholder.com/800x600?text=No+Image";

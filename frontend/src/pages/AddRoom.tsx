@@ -23,6 +23,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import API_BASE_URL from "@/config/api";
 import {
   Plus,
   X,
@@ -36,7 +37,6 @@ import {
 } from "lucide-react";
 
 const AddRoom = () => {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const { token, user, loading } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();

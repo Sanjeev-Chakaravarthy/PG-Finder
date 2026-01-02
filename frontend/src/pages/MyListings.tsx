@@ -8,8 +8,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+import API_BASE_URL from "@/config/api";
 
 const getImageUrl = (imagePath: string) => {
   if (!imagePath) return "https://via.placeholder.com/400x300?text=No+Image";
@@ -180,9 +179,6 @@ const MyListings = () => {
               <div className="flex-1">
                 <div className="font-semibold mb-1">Connection Error</div>
                 <div className="text-sm mb-2">{error}</div>
-                <div className="text-xs opacity-75 mb-3">
-                  Backend URL: {API_BASE_URL}
-                </div>
                 <Button 
                   size="sm" 
                   variant="outline" 

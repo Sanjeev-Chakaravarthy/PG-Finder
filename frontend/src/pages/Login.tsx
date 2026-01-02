@@ -11,10 +11,8 @@ import Footer from "@/components/Footer";
 import { FcGoogle } from "react-icons/fc";
 
 // Get API URL from environment variable with fallback
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+import API_BASE_URL from "@/config/api";
 
-// Log the API URL for debugging (remove in production)
-console.log('🔗 API Base URL:', API_BASE_URL);
 
 const Login = () => {
   const handleGoogleLogin = () => {
@@ -135,11 +133,6 @@ const Login = () => {
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
             </form>
-
-            {/* Debug info - Remove in production */}
-            <div className="mt-4 p-2 bg-slate-100 rounded text-xs text-slate-600">
-              <strong>Debug:</strong> API URL = {API_BASE_URL}
-            </div>
           </CardContent>
           <CardFooter className="flex justify-center">
             <p className="text-sm text-muted-foreground">

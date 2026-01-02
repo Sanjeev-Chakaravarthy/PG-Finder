@@ -40,6 +40,13 @@ const PublicOnlyRoute = ({ children }: { children: JSX.Element }) => {
   return children;
 };
 
+const PrivateRoute = ({ children }: { children: JSX.Element }) => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -63,21 +70,42 @@ const App = () => (
               }
             />
             {/* --- USER ROUTES --- */}
-            <Route path="/home" element={<Index />} />
+            <Route
+              path="/home"
+              element={
+                <PrivateRoute>
+                  <Index />
+                </PrivateRoute>
+              }
+            />
             <Route path="/listings" element={<Listings />} />
             <Route path="/room/:id" element={<RoomDetails />} />
             <Route path="/compare" element={<Compare />} />
             {/* --- OWNER ROUTES --- */}
             <Route path="/partner" element={<OwnerHome />} />
             <Route path="/add-room" element={<AddRoom />} />
-            <Route path="/owner-dashboard" element={<OwnerDashboard />} />
+            <Route
+              path="/owner-dashboard"
+              element={
+                <PrivateRoute>
+                  <OwnerDashboard />
+                </PrivateRoute>
+              }
+            />
             <Route path="/my-listings" element={<MyListings />} />
             <Route path="/edit-room/:id" element={<EditRoom />} />
             {/* --- AUTH --- */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="*" element={<NotFound />} />
-            <Route path="/user-dashboard" element={<UserDashboard />} />
+            <Route
+              path="/user-dashboard"
+              element={
+                <PrivateRoute>
+                  <UserDashboard />
+                </PrivateRoute>
+              }
+            />
             <Route path="/google-success" element={<GoogleSuccess />} />
             <Route path="/select-role" element={<SelectRole />} />{" "}
             {/* ADD THIS */}

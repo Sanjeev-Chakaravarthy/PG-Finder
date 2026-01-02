@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import API_BASE_URL from "@/config/api";
 
 interface Room {
   _id: string;
@@ -41,7 +42,6 @@ interface ComparisonMetrics {
   safety: number;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const getImageUrl = (image?: string) => {
   if (!image) return "https://via.placeholder.com/400x300?text=No+Image";
