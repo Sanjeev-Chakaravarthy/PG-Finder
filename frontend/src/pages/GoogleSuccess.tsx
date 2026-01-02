@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Loader2 } from "lucide-react";
@@ -8,14 +8,38 @@ const GoogleSuccess = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { login } = useAuth();
+  const hasProcessed = useRef(false); // Prevent double processing in React strict mode
 
   useEffect(() => {
-    const token = searchParams.get("token");
+    // Prevent running twice
+    if (hasProcessed.current) return;
     
-    if (token) {
+    const processLogin = () => {
+      const token = searchParams.get("token");
+      
+      if (!token) {
+        toast.error("No authentication token received.");
+        navigate("/login", { replace: true });
+        return;
+      }
+
       try {
         // Decode JWT to extract user info
         const payload = JSON.parse(atob(token.split('.')[1]));
+        
+        // Check if token is expired
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          toast.error("Token expired. Please login again.");
+          navigate("/login", { replace: true });
+          return;
+        }
+
+        // Check if this is a temporary token (for role selection)
+        if (payload.temp) {
+          toast.error("Please complete role selection first.");
+          navigate("/login", { replace: true });
+          return;
+        }
         
         // Create user object from JWT payload
         const user = {
@@ -24,8 +48,16 @@ const GoogleSuccess = () => {
           email: payload.email,
           role: payload.role
         };
+
+        // Validate that we have all required fields
+        if (!user.id || !user.role) {
+          throw new Error("Invalid token payload");
+        }
         
-        // Use login from AuthContext
+        // Mark as processed to prevent double execution
+        hasProcessed.current = true;
+        
+        // Use login from AuthContext (this will set localStorage and state)
         login(token, user);
         
         toast.success(`Welcome back, ${user.name}!`);
@@ -35,20 +67,19 @@ const GoogleSuccess = () => {
           if (user.role === 'owner') {
             navigate("/owner-dashboard", { replace: true });
           } else {
-            navigate("/home", { replace: true });
+            navigate("/", { replace: true }); // Redirect to home page (root)
           }
         }, 500);
         
       } catch (error) {
         console.error('Error processing token:', error);
         toast.error("Authentication failed. Please try again.");
-        navigate("/login");
+        navigate("/login", { replace: true });
       }
-    } else {
-      toast.error("No authentication token received.");
-      navigate("/login");
-    }
-  }, [searchParams, navigate, login]);
+    };
+
+    processLogin();
+  }, []); // Empty deps - only run once on mount
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-white">
