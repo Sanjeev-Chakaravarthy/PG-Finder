@@ -34,9 +34,9 @@ import {
   Loader2,
   QrCode,
 } from "lucide-react";
-import API_BASE_URL from "@/config/api";
 
 const AddRoom = () => {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const { token, user, loading } = useAuth();
   const navigate = useNavigate();
   const { id } = useParams();
