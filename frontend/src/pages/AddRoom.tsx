@@ -34,7 +34,19 @@ import {
   ImagePlus,
   Loader2,
   QrCode,
+  Video,
+  Volume2,
+  VolumeX,
+  Trash2,
 } from "lucide-react";
+
+interface MediaFile {
+  id: string;
+  file?: File;
+  type: "image" | "video";
+  url: string;
+  isExisting?: boolean;
+}
 
 const AddRoom = () => {
   const { token, user, loading } = useAuth();
@@ -60,8 +72,9 @@ const AddRoom = () => {
     description: "",
   });
 
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // NEW: Multi-media state
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+  const [mutedVideos, setMutedVideos] = useState<{ [key: string]: boolean }>({});
   const [currentRule, setCurrentRule] = useState("");
   const [rules, setRules] = useState<string[]>([]);
 
@@ -123,7 +136,25 @@ const AddRoom = () => {
 
         setFacilities(data.facilities || {});
         setRules(data.rules || []);
-        setPreviewUrl(data.image ? `${API_BASE_URL}${data.image}` : null);
+
+        // Load existing media
+        if (data.media && Array.isArray(data.media)) {
+          const existingMedia = data.media.map((mediaPath: string, idx: number) => ({
+            id: `existing-${idx}`,
+            type: mediaPath.match(/\.(mp4|mov|webm|avi)$/i) ? "video" : "image",
+            url: `${API_BASE_URL}${mediaPath}`,
+            isExisting: true,
+          }));
+          setMediaFiles(existingMedia);
+        } else if (data.image) {
+          // Fallback for old single image
+          setMediaFiles([{
+            id: "existing-0",
+            type: "image",
+            url: `${API_BASE_URL}${data.image}`,
+            isExisting: true,
+          }]);
+        }
 
         setRoomStatus(data.status);
         setLastUpdated(data.updatedAt || null);
@@ -144,7 +175,7 @@ const AddRoom = () => {
           },
           facilities: data.facilities || {},
           rules: data.rules || [],
-          previewUrl: data.image ? `${API_BASE_URL}${data.image}` : null,
+          media: data.media || (data.image ? [data.image] : []),
         });
       } catch {
         toast.error("Error loading room");
@@ -158,19 +189,40 @@ const AddRoom = () => {
     setFacilities((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setImageFile(file);
-      const objectUrl = URL.createObjectURL(file);
-      setPreviewUrl(objectUrl);
+  // NEW: Multi-media upload handler
+  const handleMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      const newMedia: MediaFile[] = files.map((file) => ({
+        id: `${Date.now()}-${Math.random()}`,
+        file,
+        type: file.type.startsWith("video/") ? "video" : "image",
+        url: URL.createObjectURL(file),
+        isExisting: false,
+      }));
+      setMediaFiles((prev) => [...prev, ...newMedia]);
     }
   };
 
-  const removeImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setImageFile(null);
-    setPreviewUrl(null);
+  const removeMedia = (id: string) => {
+    setMediaFiles((prev) => prev.filter((m) => m.id !== id));
+    const newMuted = { ...mutedVideos };
+    delete newMuted[id];
+    setMutedVideos(newMuted);
+  };
+
+  const toggleMute = (id: string) => {
+    setMutedVideos((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const reorderMedia = (fromIndex: number, toIndex: number) => {
+    const newMedia = [...mediaFiles];
+    const [removed] = newMedia.splice(fromIndex, 1);
+    newMedia.splice(toIndex, 0, removed);
+    setMediaFiles(newMedia);
   };
 
   const handleAddRule = () => {
@@ -192,14 +244,13 @@ const AddRoom = () => {
       return;
     }
 
-    if (!imageFile && !isEdit) {
-      toast.error("Please upload an image of the room.");
+    if (mediaFiles.length === 0) {
+      toast.error("Please upload at least one image or video.");
       return;
     }
 
     setIsLoading(true);
 
-    // Auto-normalize area before submit
     const normalizedRoomData = {
       ...roomData,
       area: roomData.area.trim().toLowerCase(),
@@ -210,7 +261,22 @@ const AddRoom = () => {
       formData.append(key, normalizedRoomData[key as keyof typeof normalizedRoomData]);
     });
 
-    if (imageFile) formData.append("image", imageFile);
+    // Append all NEW media files
+    mediaFiles.forEach((media, index) => {
+      if (media.file) {
+        formData.append("media", media.file);
+      }
+    });
+
+    // Keep track of existing media URLs (for edit mode)
+    const existingMediaUrls = mediaFiles
+      .filter(m => m.isExisting)
+      .map(m => m.url.replace(API_BASE_URL, ""));
+    
+    if (existingMediaUrls.length > 0) {
+      formData.append("existingMedia", JSON.stringify(existingMediaUrls));
+    }
+
     if (qrFile) formData.append("paymentQr", qrFile);
     formData.append("facilities", JSON.stringify(facilities));
     formData.append("rules", JSON.stringify(rules));
@@ -269,54 +335,161 @@ const AddRoom = () => {
             </p>
           )}
           <p className="text-muted-foreground">
-            Fill in the details to list your PG on PG Haven.
+            Fill in the details to list your PG on PG Finder.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* IMAGE UPLOAD SECTION - FIXED */}
+          {/* MEDIA UPLOAD SECTION */}
           <Card className="overflow-hidden border-2 border-dashed border-muted-foreground/20 hover:border-primary/50 transition-colors rounded-xl bg-muted/5">
-            <CardContent className="p-0">
-              {previewUrl ? (
-                <div className="relative w-full aspect-[21/9] bg-slate-100 group">
-                  <img
-                    src={previewUrl}
-                    alt="Property Preview"
-                    className="w-full h-full object-contain"
-                  />
+            <CardContent className="p-6">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold mb-2">Property Media</h3>
+                <p className="text-sm text-muted-foreground">
+                  Upload multiple images and videos. First item will be the cover.
+                </p>
+              </div>
+
+              {/* Upload Button */}
+              <label className="flex flex-col items-center justify-center h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/10 transition-colors mb-6">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="p-3 rounded-full bg-primary/10 text-primary">
+                    <ImagePlus className="w-6 h-6" />
+                  </div>
+                  <div className="p-3 rounded-full bg-purple-500/10 text-purple-600">
+                    <Video className="w-6 h-6" />
+                  </div>
+                </div>
+                <h3 className="font-semibold text-lg mb-1">
+                  Upload Images & Videos
+                </h3>
+                <p className="text-sm text-muted-foreground text-center">
+                  Drag & drop or click to upload
+                  <br />
+                  <span className="text-xs">JPG, PNG, MP4, MOV, WebM (Max 50MB each)</span>
+                </p>
+                <Input
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  onChange={handleMediaChange}
+                  className="hidden"
+                />
+              </label>
+
+              {/* Media Count */}
+              {mediaFiles.length > 0 && (
+                <div className="flex items-center justify-between mb-4 pb-4 border-b">
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
+                      {mediaFiles.length} file{mediaFiles.length !== 1 ? "s" : ""}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      ({mediaFiles.filter((m) => m.type === "image").length} images,{" "}
+                      {mediaFiles.filter((m) => m.type === "video").length} videos)
+                    </span>
+                  </div>
                   <Button
                     type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-4 right-4 shadow-md rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={removeImage}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMediaFiles([])}
+                    className="text-red-600 hover:text-red-700"
                   >
-                    <X className="w-5 h-5" />
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Clear All
                   </Button>
                 </div>
-              ) : (
-                <label
-                  htmlFor="image-upload"
-                  className="flex flex-col items-center justify-center h-[300px] w-full cursor-pointer hover:bg-muted/10 transition-colors"
-                >
-                  <div className="p-4 rounded-full bg-primary/10 mb-4 text-primary">
-                    <ImagePlus className="w-10 h-10" />
-                  </div>
-                  <h3 className="font-semibold text-xl">
-                    Upload Property Photo
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-2 max-w-xs text-center">
-                    Drag & drop or click to choose your main listing image.
-                  </p>
-                  <Input
-                    id="image-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    required
-                    className="hidden"
-                  />
-                </label>
+              )}
+
+              {/* Media Grid */}
+              {mediaFiles.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {mediaFiles.map((media, index) => (
+                    <Card
+                      key={media.id}
+                      className="group overflow-hidden hover:shadow-lg transition-all cursor-move"
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", index.toString());
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const fromIndex = parseInt(e.dataTransfer.getData("text/plain"));
+                        reorderMedia(fromIndex, index);
+                      }}
+                    >
+                      <div className="relative aspect-video bg-slate-100">
+                        {media.type === "image" ? (
+                          <img
+                            src={media.url}
+                            alt={`Media ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <video
+                            src={media.url}
+                            className="w-full h-full object-cover"
+                            controls
+                            muted={mutedVideos[media.id] !== false}
+                            loop
+                          />
+                        )}
+
+                        {/* Type Badge */}
+                        <div className="absolute top-2 left-2">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              media.type === "video"
+                                ? "bg-purple-600 text-white"
+                                : "bg-blue-600 text-white"
+                            }`}
+                          >
+                            {media.type === "video" ? (
+                              <Video className="w-3 h-3 inline mr-1" />
+                            ) : (
+                              <ImagePlus className="w-3 h-3 inline mr-1" />
+                            )}
+                            {media.type}
+                          </span>
+                        </div>
+
+                        {/* Order Badge */}
+                        <div className="absolute bottom-2 left-2">
+                          <span className="px-2 py-0.5 bg-black/70 text-white rounded-full text-xs font-medium">
+                            #{index + 1}
+                          </span>
+                        </div>
+
+                        {/* Controls */}
+                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {media.type === "video" && (
+                            <button
+                              type="button"
+                              onClick={() => toggleMute(media.id)}
+                              className="p-1.5 rounded-full bg-white/90 hover:bg-white shadow-md"
+                            >
+                              {mutedVideos[media.id] === false ? (
+                                <Volume2 className="w-3 h-3" />
+                              ) : (
+                                <VolumeX className="w-3 h-3" />
+                              )}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeMedia(media.id)}
+                            className="p-1.5 rounded-full bg-red-500 hover:bg-red-600 shadow-md"
+                          >
+                            <X className="w-3 h-3 text-white" />
+                          </button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>
@@ -647,8 +820,19 @@ const AddRoom = () => {
                         setRoomData(initialData.roomData);
                         setFacilities(initialData.facilities);
                         setRules(initialData.rules);
-                        setPreviewUrl(initialData.previewUrl);
-                        setImageFile(null);
+                        
+                        // Restore media
+                        if (initialData.media && Array.isArray(initialData.media)) {
+                          const restoredMedia = initialData.media.map((mediaPath: string, idx: number) => ({
+                            id: `existing-${idx}`,
+                            type: mediaPath.match(/\.(mp4|mov|webm|avi)$/i) ? "video" : "image",
+                            url: `${API_BASE_URL}${mediaPath}`,
+                            isExisting: true,
+                          }));
+                          setMediaFiles(restoredMedia);
+                        }
+                        
+                        setQrFile(null);
                         toast.info("Changes reset");
                       }}
                     >

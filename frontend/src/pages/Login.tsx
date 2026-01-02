@@ -80,7 +80,7 @@ const Login = () => {
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md shadow-lg border-2">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Login to PG Haven</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">Login to PG Finder</CardTitle>
             <p className="text-sm text-center text-muted-foreground">
               Enter your email and password to access your account
             </p>
