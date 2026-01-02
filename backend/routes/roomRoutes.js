@@ -27,7 +27,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage,
-  limits: { fileSize: 5000000 }
+  limits: { fileSize: 50000000 } // 50MB
 });
 
 const paymentUpload = multer({
@@ -35,9 +35,9 @@ const paymentUpload = multer({
   limits: { fileSize: 5000000 }
 });
 
-// Allow multiple files
+// 🆕 Support multiple 'media' files + single 'paymentQr'
 const cpUpload = upload.fields([
-  { name: 'image', maxCount: 1 }, 
+  { name: 'media', maxCount: 20 }, // Allow up to 20 images/videos
   { name: 'paymentQr', maxCount: 1 }
 ]);
 

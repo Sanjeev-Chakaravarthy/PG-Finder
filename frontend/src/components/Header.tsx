@@ -46,7 +46,7 @@ const Header = () => {
         <Link to={getHomeLink()} className="flex items-center space-x-2 group">
           <Home className="h-6 w-6 text-primary transition-transform group-hover:scale-110" />
           <span className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-            PG Haven
+            PG Finder
           </span>
         </Link>
 

@@ -49,32 +49,28 @@ exports.getMyRooms = async (req, res) => {
   }
 };
 
-// @desc    Create room
+// @desc    Create room (UPDATED for multi-media)
 // @route   POST /api/rooms
 exports.createRoom = async (req, res) => {
   try {
     if (!req.user || !req.user.id) {
       return res.status(401).json({ error: "User not authenticated" });
     }
+
     const {
-      name,
-      location,
-      area,
-      price,
-      deposit,
-      noticePeriod,
-      occupancy,
-      gender,
-      description,
-      amenities,
-      facilities,
-      rules,
-      ownerPhone,
-      ownerWhatsapp,
+      name, location, area, price, deposit, noticePeriod,
+      occupancy, gender, description, amenities, facilities,
+      rules, ownerPhone, ownerWhatsapp,
     } = req.body;
 
-    const imagePath = req.files && req.files['image'] ? `/uploads/${req.files['image'][0].filename}` : '';
-    const qrPath = req.files && req.files['paymentQr'] ? `/uploads/${req.files['paymentQr'][0].filename}` : '';
+    // Handle multiple media files
+    const mediaPaths = req.files?.media
+      ? req.files.media.map(file => `/uploads/${file.filename}`)
+      : [];
+
+    const qrPath = req.files?.paymentQr?.[0]
+      ? `/uploads/${req.files.paymentQr[0].filename}`
+      : '';
 
     let parsedFacilities = facilities ? JSON.parse(facilities) : {};
     let parsedAmenities = amenities ? JSON.parse(amenities) : [];
@@ -87,16 +83,19 @@ exports.createRoom = async (req, res) => {
       area: area.trim().toLowerCase(),
       ownerPhone,
       ownerWhatsapp,
-      price: Number(price), 
+      price: Number(price),
       deposit: Number(deposit),
       noticePeriod: Number(noticePeriod) || 30,
-      occupancy, gender, description,
-      image: imagePath,
-      paymentQr: qrPath, // Save QR Path
+      occupancy,
+      gender,
+      description,
+      media: mediaPaths,
+      image: mediaPaths[0] || '',
+      paymentQr: qrPath,
       facilities: parsedFacilities,
       amenities: parsedAmenities,
       rules: parsedRules,
-      status: 'available'
+      status: 'available',
     });
 
     res.status(201).json(newRoom);
@@ -301,36 +300,27 @@ exports.verifyPayment = async (req, res) => {
  * @route   PUT /api/rooms/:id
  * @access  Owner only
  */
+// @desc    Update room (UPDATED for multi-media)
+// @route   PUT /api/rooms/:id
 exports.updateRoom = async (req, res) => {
   try {
     const room = await Room.findById(req.params.id);
     if (!room) {
       return res.status(404).json({ error: "Room not found" });
     }
+
     if (room.status === "occupied") {
       return res.status(400).json({ error: "Occupied rooms cannot be edited" });
     }
 
-    // Owner check
     if (room.ownerId.toString() !== req.user.id) {
       return res.status(403).json({ error: "Not authorized to edit this room" });
     }
 
     const {
-      name,
-      location,
-      area,
-      price,
-      deposit,
-      noticePeriod,
-      occupancy,
-      gender,
-      description,
-      amenities,
-      facilities,
-      rules,
-      ownerPhone,
-      ownerWhatsapp,
+      name, location, area, price, deposit, noticePeriod,
+      occupancy, gender, description, amenities, facilities,
+      rules, ownerPhone, ownerWhatsapp, existingMedia
     } = req.body;
 
     if (name !== undefined) room.name = name;
@@ -349,16 +339,41 @@ exports.updateRoom = async (req, res) => {
     if (facilities) room.facilities = JSON.parse(facilities);
     if (rules) room.rules = JSON.parse(rules);
 
-    // Replace main image if uploaded
-    if (req.files?.image?.[0]) {
-      if (room.image) {
-        const oldImagePath = path.join(__dirname, "..", room.image);
-        if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
+    // Parse existing media
+    let existingMediaArray = [];
+    if (existingMedia) {
+      try {
+        existingMediaArray = JSON.parse(existingMedia);
+      } catch (e) {
+        console.error("Failed to parse existingMedia:", e);
       }
-      room.image = `/uploads/${req.files.image[0].filename}`;
     }
 
-    // Replace payment QR if uploaded
+    // Delete removed media files
+    if (room.media && Array.isArray(room.media)) {
+      room.media.forEach(oldPath => {
+        if (!existingMediaArray.includes(oldPath)) {
+          const filePath = path.join(__dirname, '..', oldPath);
+          if (fs.existsSync(filePath)) {
+            try {
+              fs.unlinkSync(filePath);
+            } catch (e) {
+              console.error("Failed to delete old media:", e);
+            }
+          }
+        }
+      });
+    }
+
+    // Add newly uploaded media
+    const newMediaPaths = req.files?.media
+      ? req.files.media.map(file => `/uploads/${file.filename}`)
+      : [];
+
+    room.media = [...existingMediaArray, ...newMediaPaths];
+    room.image = room.media[0] || '';
+
+    // Update payment QR
     if (req.files?.paymentQr?.[0]) {
       if (room.paymentQr) {
         const oldQrPath = path.join(__dirname, "..", room.paymentQr);
@@ -367,7 +382,6 @@ exports.updateRoom = async (req, res) => {
       room.paymentQr = `/uploads/${req.files.paymentQr[0].filename}`;
     }
 
-    // Change history (simple audit log)
     room.editHistory = room.editHistory || [];
     room.editHistory.push({
       editedBy: req.user.id,
