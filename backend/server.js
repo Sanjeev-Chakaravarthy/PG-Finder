@@ -28,7 +28,7 @@ const allowedOrigins = [
 ].filter(Boolean);
 
 // CORS Configuration - Must be before routes
-app.use(cors({
+const corsOptions = {
   origin: function(origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
@@ -45,10 +45,9 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   exposedHeaders: ['Content-Length', 'Content-Type']
-}));
+};
 
-// Handle preflight requests for all routes
-app.options('*', cors());
+app.use(cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json());
@@ -82,7 +81,8 @@ app.get('/health', (req, res) => {
     status: 'ok', 
     message: 'PG Haven API is healthy',
     timestamp: new Date().toISOString(),
-    allowedOrigins: allowedOrigins
+    allowedOrigins: allowedOrigins,
+    nodeEnv: process.env.NODE_ENV || 'development'
   });
 });
 
