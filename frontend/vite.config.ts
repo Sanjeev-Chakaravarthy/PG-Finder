@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
   // ⚠️ CRITICAL: Define environment variables for production build
   define: {
     'import.meta.env.VITE_API_BASE_URL': JSON.stringify(
-      process.env.VITE_API_BASE_URL || 'http://localhost:5001'
+      process.env.VITE_API_BASE_URL || 'https://pg-haven.onrender.com'
     ),
   },
 }));

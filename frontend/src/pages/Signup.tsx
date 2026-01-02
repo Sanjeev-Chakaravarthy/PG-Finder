@@ -10,7 +10,8 @@ import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-import API_BASE_URL from "@/config/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const Signup = () => {
   const handleGoogleSignup = () => {
     window.location.href = `${API_BASE_URL}/api/auth/google`;
