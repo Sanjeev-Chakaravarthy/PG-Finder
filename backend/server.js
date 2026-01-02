@@ -18,19 +18,23 @@ connectDB();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// FIXED: Allow multiple origins for development and production
+// ============================================
+// FIXED CORS CONFIGURATION
+// ============================================
+
+// Define allowed origins
 const allowedOrigins = [
   'http://localhost:8080',
   'http://localhost:5173',
   'http://localhost:3000',
   'https://pg-haven.vercel.app',
   process.env.FRONTEND_URL
-].filter(Boolean);
+].filter(Boolean); // Remove undefined values
 
-// CORS Configuration - Must be before routes
+// CORS Configuration - MUST BE BEFORE OTHER MIDDLEWARE
 const corsOptions = {
   origin: function(origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
+    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
     if (!origin) return callback(null, true);
     
     if (allowedOrigins.includes(origin)) {
@@ -41,13 +45,18 @@ const corsOptions = {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true,
+  credentials: true, // Allow cookies and authorization headers
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  exposedHeaders: ['Content-Length', 'Content-Type']
+  exposedHeaders: ['Content-Length', 'Content-Type'],
+  optionsSuccessStatus: 200 // For legacy browser support
 };
 
+// Apply CORS middleware FIRST
 app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json());
@@ -60,7 +69,7 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === 'production', // true only in production with HTTPS
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
       httpOnly: true,
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
@@ -134,8 +143,8 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🌐 Allowed CORS origins:`, allowedOrigins);
+  console.log(`🔒 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌍 Allowed CORS origins:`, allowedOrigins);
   console.log(`📁 Upload directory: ${path.join(__dirname, 'uploads')}`);
 });
 
