@@ -2,6 +2,6 @@
 // API Configuration - Production Only
 
 // Always use production backend URL
-export const API_BASE_URL = 'https://pg-haven.onrender.com';
+export const API_BASE_URL = 'https://pg-finder.onrender.com';
 
 export default API_BASE_URL;
