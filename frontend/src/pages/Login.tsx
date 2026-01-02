@@ -9,12 +9,17 @@ import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { FcGoogle } from "react-icons/fc";
-import API_BASE_URL from "@/config/api";
+
+// Get API URL from environment variable with fallback
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+
+// Log the API URL for debugging (remove in production)
+console.log('🔗 API Base URL:', API_BASE_URL);
 
 const Login = () => {
   const handleGoogleLogin = () => {
     const googleAuthUrl = `${API_BASE_URL}/api/auth/google`;
-    console.log('🔗 Redirecting to Google Auth:', googleAuthUrl);
+    console.log('🔗 Redirecting to:', googleAuthUrl);
     window.location.href = googleAuthUrl;
   };
 
@@ -43,9 +48,10 @@ const Login = () => {
 
       console.log('📡 Response status:', res.status);
 
+      // Check if response is JSON
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Server returned non-JSON response. Backend may be down.");
+        throw new Error("Server returned non-JSON response. Check if backend is running.");
       }
 
       const data = await res.json();
@@ -61,9 +67,9 @@ const Login = () => {
       console.error('❌ Login error:', error);
       
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        toast.error(`Cannot connect to backend at ${API_BASE_URL}`);
+        toast.error(`Cannot connect to server at ${API_BASE_URL}. Please check if backend is running.`);
       } else {
-        toast.error(error instanceof Error ? error.message : "Network error occurred");
+        toast.error("Network error. Please check your connection.");
       }
     } finally {
       setIsLoading(false);
@@ -129,6 +135,11 @@ const Login = () => {
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
             </form>
+
+            {/* Debug info - Remove in production */}
+            <div className="mt-4 p-2 bg-slate-100 rounded text-xs text-slate-600">
+              <strong>Debug:</strong> API URL = {API_BASE_URL}
+            </div>
           </CardContent>
           <CardFooter className="flex justify-center">
             <p className="text-sm text-muted-foreground">
