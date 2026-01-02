@@ -20,9 +20,8 @@ import {
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import API_BASE_URL from "@/config/api";
 
-// API base URL from Vite env
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Helper for image URLs
 const getImageUrl = (imagePath: string) => {
