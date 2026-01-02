@@ -11,8 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
+import API_BASE_URL from "@/config/api";
 // High-quality hero background
 const HERO_IMG = "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&q=80&w=2000";
 
