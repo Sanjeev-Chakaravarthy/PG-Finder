@@ -1,3 +1,4 @@
+// config/passport.js
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const User = require("../models/User");
@@ -5,29 +6,36 @@ const User = require("../models/User");
 passport.use(
   new GoogleStrategy(
     {
-      clientID: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: process.env.GOOGLE_CALLBACK_URL,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
+        const email = profile.emails[0].value;
+        
         // Check if user already exists
-        let user = await User.findOne({ email: profile.emails[0].value });
+        let user = await User.findOne({ email });
 
-        if (!user) {
-          // Create new user with default role "user"
-          // They will select their actual role on the next page
-          user = await User.create({
-            name: profile.displayName,
-            email: profile.emails[0].value,
-            password: "google-auth", // Marker for Google auth users
-            role: "user", // Default, will be updated in role selection
-          });
+        if (user) {
+          // Existing user - just return them
+          return done(null, user);
         }
-
-        done(null, user);
+        
+        // Create new user
+        user = await User.create({
+          name: profile.displayName,
+          email: email,
+          password: "google-auth", // Marker for Google auth users
+          role: "user", // Default role
+          roleSelected: false, // They need to select their role
+          authMethod: "google"
+        });
+        
+        return done(null, user);
       } catch (err) {
-        done(err, null);
+        console.error('Google Strategy Error:', err);
+        return done(err, null);
       }
     }
   )

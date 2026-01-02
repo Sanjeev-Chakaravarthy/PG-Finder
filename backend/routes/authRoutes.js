@@ -1,3 +1,4 @@
+// ============= authRoutes.js - COMPLETE FIX =============
 const express = require("express");
 const router = express.Router();
 const passport = require("passport");
@@ -45,11 +46,15 @@ router.get(
     try {
       const user = req.user;
       
-      // Check if this is a new user (password will be "google-auth" for new users)
-      // OR check if user was just created (no role set yet except default)
-      const isNewUser = user.password === "google-auth" && user.role === "user";
+      if (!user) {
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=user_not_found`);
+      }
       
-      if (isNewUser) {
+      // Check if user needs to select a role
+      // New Google users will have password = "google-auth" initially
+      const needsRoleSelection = user.password === "google-auth" && !user.roleSelected;
+      
+      if (needsRoleSelection) {
         // New user - redirect to role selection with temporary token
         const tempToken = jwt.sign(
           { 
@@ -62,7 +67,7 @@ router.get(
           { expiresIn: "15m" } // Short expiry for role selection
         );
         
-        res.redirect(
+        return res.redirect(
           `${process.env.FRONTEND_URL}/select-role?token=${tempToken}&email=${encodeURIComponent(user.email)}&name=${encodeURIComponent(user.name)}`
         );
       } else {
@@ -78,35 +83,63 @@ router.get(
           { expiresIn: "7d" }
         );
 
-        res.redirect(
+        return res.redirect(
           `${process.env.FRONTEND_URL}/google-success?token=${token}`
         );
       }
     } catch (error) {
       console.error('Google callback error:', error);
-      res.redirect(`${process.env.FRONTEND_URL}/login?error=token_generation_failed`);
+      res.redirect(`${process.env.FRONTEND_URL}/login?error=callback_failed`);
     }
   }
 );
 
 // Complete Google signup with role selection
-router.post("/google/complete", protect, async (req, res) => {
+router.post("/google/complete", async (req, res) => {
   try {
+    // Get token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: "No token provided" });
+    }
+
+    const token = authHeader.split(' ')[1];
+    
+    // Verify token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ error: "Invalid or expired token" });
+    }
+    
+    // Check if it's a temporary token
+    if (!decoded.temp) {
+      return res.status(400).json({ error: "Not a role selection token" });
+    }
+    
     const { role } = req.body;
     
     if (!role || !["user", "owner"].includes(role)) {
-      return res.status(400).json({ error: "Invalid role" });
+      return res.status(400).json({ error: "Invalid role. Must be 'user' or 'owner'" });
     }
     
     // Update user role
     const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { role: role },
+      decoded.id,
+      { 
+        role: role,
+        roleSelected: true // Mark that role has been selected
+      },
       { new: true }
     );
     
-    // Generate new token with role
-    const token = jwt.sign(
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    // Generate new permanent token with role
+    const permanentToken = jwt.sign(
       { 
         id: user._id, 
         role: user.role,
@@ -118,7 +151,7 @@ router.post("/google/complete", protect, async (req, res) => {
     );
     
     res.json({
-      token,
+      token: permanentToken,
       user: {
         id: user._id,
         name: user.name,
