@@ -14,7 +14,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import API_BASE_URL from "@/config/api";
 const getImageUrl = (path: string) => {
     if (!path) return "https://via.placeholder.com/400x300?text=No+Image";
     if (path.startsWith("http")) return path;

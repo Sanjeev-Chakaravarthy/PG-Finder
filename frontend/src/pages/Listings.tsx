@@ -22,8 +22,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 // API base URL from Vite env
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
+import API_BASE_URL from "@/config/api";
 // Helper for image URLs
 const getImageUrl = (imagePath: string) => {
   if (!imagePath) return "https://via.placeholder.com/400x300?text=No+Image";
