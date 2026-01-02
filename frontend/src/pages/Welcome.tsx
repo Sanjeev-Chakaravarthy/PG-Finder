@@ -27,7 +27,7 @@ const Welcome = () => {
             </Badge>
             
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-              Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-600">PG Haven</span>
+              Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-600">PG Finder</span>
             </h1>
             
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
@@ -118,7 +118,7 @@ const Welcome = () => {
             <div className="grid md:grid-cols-3 gap-8">
               {[
                 {
-                  text: "Finding a PG near Law Gate was a nightmare until I found PG Haven. Verified photos saved me so much time!",
+                  text: "Finding a PG near Law Gate was a nightmare until I found PG Finder. Verified photos saved me so much time!",
                   name: "Priya Sharma",
                   role: "Student, LPU",
                   rating: 5

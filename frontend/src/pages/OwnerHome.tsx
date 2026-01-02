@@ -43,7 +43,7 @@ const OwnerHome = () => {
               </h1>
               
               <p className="text-lg md:text-xl text-slate-300 leading-relaxed max-w-xl border-l-4 border-orange-500 pl-6">
-                Stop chasing tenants and rent payments. Switch to <strong>PG Haven</strong> for 100% occupancy, automated billing, and verified residents.
+                Stop chasing tenants and rent payments. Switch to <strong>PG Finder</strong> for 100% occupancy, automated billing, and verified residents.
               </p>
               
               {/* BUTTONS */}
