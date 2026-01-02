@@ -67,7 +67,7 @@ const SelectRole = () => {
         // Use the login function from AuthContext
         login(data.token, user);
         
-        toast.success(`Welcome to PG Haven, ${data.user.name}!`);
+        toast.success(`Welcome to PG Finder, ${data.user.name}!`);
         
         // Small delay then redirect based on role
         setTimeout(() => {
@@ -117,7 +117,7 @@ const SelectRole = () => {
               Welcome, {name}! 👋
             </CardTitle>
             <p className="text-center text-muted-foreground mt-2">
-              Choose how you'd like to use PG Haven
+              Choose how you'd like to use PG Finder
             </p>
           </CardHeader>
           <CardContent className="space-y-6 p-8">

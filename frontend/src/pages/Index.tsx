@@ -208,7 +208,7 @@ const Index = () => {
               <Badge variant="outline" className="border-primary text-primary px-3 py-1">Premium Features</Badge>
               <h2 className="text-3xl md:text-4xl font-bold">More than just a room.</h2>
               <p className="text-lg text-muted-foreground leading-relaxed">
-                We ensure that every property listed on PG Haven meets our strict quality standards. 
+                We ensure that every property listed on PG Finder meets our strict quality standards. 
                 Move in without worries about amenities or hidden costs.
               </p>
               
@@ -238,7 +238,7 @@ const Index = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-lg">Verified Property</h4>
-                    <p className="text-xs text-muted-foreground">Inspected by PG Haven Team</p>
+                    <p className="text-xs text-muted-foreground">Inspected by PG Finder Team</p>
                   </div>
                 </div>
                 <div className="space-y-3">
