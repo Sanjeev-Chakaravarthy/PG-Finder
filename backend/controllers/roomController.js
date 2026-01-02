@@ -8,7 +8,31 @@ const path = require('path');
 exports.getRooms = async (req, res) => {
   try {
     const rooms = await Room.find({ status: { $ne: 'occupied' } }).sort({ createdAt: -1 });
-    res.json(rooms);
+    
+    // FIXED: Ensure media array exists and has proper URLs
+    const roomsWithMedia = rooms.map(room => {
+      const roomObj = room.toObject();
+      
+      // Ensure media array exists
+      if (!roomObj.media || !Array.isArray(roomObj.media) || roomObj.media.length === 0) {
+        // Fallback to old 'image' field if exists
+        roomObj.media = roomObj.image ? [roomObj.image] : [];
+      }
+      
+      // Clean up media paths (ensure they start with /)
+      roomObj.media = roomObj.media.map(mediaPath => {
+        if (!mediaPath) return '';
+        if (mediaPath.startsWith('http')) return mediaPath;
+        return mediaPath.startsWith('/') ? mediaPath : `/${mediaPath}`;
+      }).filter(Boolean); // Remove empty strings
+      
+      // Set image to first media item for backward compatibility
+      roomObj.image = roomObj.media[0] || '';
+      
+      return roomObj;
+    });
+    
+    res.json(roomsWithMedia);
   } catch (error) {
     console.error("getRooms Error:", error);
     res.status(500).json([]);
@@ -24,25 +48,62 @@ exports.getRoomById = async (req, res) => {
       .populate('bookedBy', 'name email phone');
     
     if (!room) return res.status(404).json({ error: 'Room not found' });
-    res.json(room);
+    
+    const roomObj = room.toObject();
+    
+    // FIXED: Ensure media array exists
+    if (!roomObj.media || !Array.isArray(roomObj.media) || roomObj.media.length === 0) {
+      roomObj.media = roomObj.image ? [roomObj.image] : [];
+    }
+    
+    // Clean up media paths
+    roomObj.media = roomObj.media.map(mediaPath => {
+      if (!mediaPath) return '';
+      if (mediaPath.startsWith('http')) return mediaPath;
+      return mediaPath.startsWith('/') ? mediaPath : `/${mediaPath}`;
+    }).filter(Boolean);
+    
+    roomObj.image = roomObj.media[0] || '';
+    
+    res.json(roomObj);
   } catch (error) {
+    console.error("getRoomById Error:", error);
     res.status(500).json({ error: 'Server Error' });
   }
 };
 
-// @desc    Get Owner's Listings (FIXED 500 CRASH)
+// @desc    Get Owner's Listings (FIXED 500 CRASH + MEDIA)
 // @route   GET /api/rooms/my-listings
 exports.getMyRooms = async (req, res) => {
   try {
-    // FIX: Explicitly check if user is authenticated
     if (!req.user || !req.user.id) {
-        return res.status(401).json({ error: 'User not authenticated' });
+      return res.status(401).json({ error: 'User not authenticated' });
     }
+    
     const rooms = await Room.find({ ownerId: req.user.id })
       .populate('bookedBy', 'name email')
       .sort({ createdAt: -1 });
+    
+    // FIXED: Ensure media array exists for each room
+    const roomsWithMedia = rooms.map(room => {
+      const roomObj = room.toObject();
       
-    res.json(rooms || []); // Always return array
+      if (!roomObj.media || !Array.isArray(roomObj.media) || roomObj.media.length === 0) {
+        roomObj.media = roomObj.image ? [roomObj.image] : [];
+      }
+      
+      roomObj.media = roomObj.media.map(mediaPath => {
+        if (!mediaPath) return '';
+        if (mediaPath.startsWith('http')) return mediaPath;
+        return mediaPath.startsWith('/') ? mediaPath : `/${mediaPath}`;
+      }).filter(Boolean);
+      
+      roomObj.image = roomObj.media[0] || '';
+      
+      return roomObj;
+    });
+    
+    res.json(roomsWithMedia || []);
   } catch (error) {
     console.error("Error in getMyRooms:", error);
     res.status(500).json({ error: 'Server Error fetching listings' });
@@ -63,7 +124,7 @@ exports.createRoom = async (req, res) => {
       rules, ownerPhone, ownerWhatsapp,
     } = req.body;
 
-    // Handle multiple media files
+    // FIXED: Handle multiple media files with proper path formatting
     const mediaPaths = req.files?.media
       ? req.files.media.map(file => `/uploads/${file.filename}`)
       : [];
@@ -98,9 +159,10 @@ exports.createRoom = async (req, res) => {
       status: 'available',
     });
 
+    console.log('✅ Room created with media:', mediaPaths);
     res.status(201).json(newRoom);
   } catch (error) {
-    console.error(error);
+    console.error('❌ Create room error:', error);
     res.status(500).json({ error: 'Failed to create room' });
   }
 };
@@ -116,16 +178,32 @@ exports.deleteRoom = async (req, res) => {
       return res.status(401).json({ error: 'Not authorized' });
     }
 
+    // Delete all media files
+    if (room.media && Array.isArray(room.media)) {
+      room.media.forEach(mediaPath => {
+        try {
+          const filePath = path.join(__dirname, '..', mediaPath);
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        } catch(e) { 
+          console.error("Media delete error", e); 
+        }
+      });
+    }
+
+    // Delete old single image if exists
     if (room.image) {
-       try {
-         const filePath = path.join(__dirname, '..', room.image);
-         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-       } catch(e) { console.error("Image delete error", e); }
+      try {
+        const filePath = path.join(__dirname, '..', room.image);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      } catch(e) { 
+        console.error("Image delete error", e); 
+      }
     }
 
     await room.deleteOne();
     res.json({ message: 'PG Removed Successfully' });
   } catch (error) {
+    console.error('Delete room error:', error);
     res.status(500).json({ error: 'Delete failed' });
   }
 };
@@ -193,8 +271,6 @@ exports.confirmOccupancy = async (req, res) => {
     res.status(500).json({ error: 'Action failed' });
   }
 };
-
-// --- NEW USER DASHBOARD FUNCTIONS ---
 
 // @desc    Get rooms booked by the user
 exports.getUserBookings = async (req, res) => {
@@ -295,11 +371,6 @@ exports.verifyPayment = async (req, res) => {
   }
 };
 
-/**
- * @desc    Update room (Edit PG)
- * @route   PUT /api/rooms/:id
- * @access  Owner only
- */
 // @desc    Update room (UPDATED for multi-media)
 // @route   PUT /api/rooms/:id
 exports.updateRoom = async (req, res) => {
@@ -357,6 +428,7 @@ exports.updateRoom = async (req, res) => {
           if (fs.existsSync(filePath)) {
             try {
               fs.unlinkSync(filePath);
+              console.log('🗑️ Deleted old media:', oldPath);
             } catch (e) {
               console.error("Failed to delete old media:", e);
             }
@@ -372,6 +444,8 @@ exports.updateRoom = async (req, res) => {
 
     room.media = [...existingMediaArray, ...newMediaPaths];
     room.image = room.media[0] || '';
+
+    console.log('✅ Updated room media:', room.media);
 
     // Update payment QR
     if (req.files?.paymentQr?.[0]) {
