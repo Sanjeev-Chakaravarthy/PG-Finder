@@ -778,7 +778,7 @@ const AddRoom = () => {
                         onValueChange={(val) =>
                           setRoomData({ ...roomData, occupancy: val })
                         }
-                        defaultValue="Single"
+                        value={roomData.occupancy}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Occupancy" />

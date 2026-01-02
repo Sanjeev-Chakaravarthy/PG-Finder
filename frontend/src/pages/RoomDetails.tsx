@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, MapPin, Star, Wifi, Wind, Utensils, Car, Dumbbell,
-  ShowerHead, Shield, Check, Phone, MessageCircle, Loader2, Trash2, Settings
+  ShowerHead, Shield, Check, Phone, MessageCircle, Loader2, Trash2, Settings,
+  Play, Pause, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,11 +16,223 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 import API_BASE_URL from "@/config/api";
-// Helper for image URLs
-const getImageUrl = (imagePath: string) => {
-  if (!imagePath) return "https://via.placeholder.com/800x600?text=No+Image";
-  if (imagePath.startsWith("http")) return imagePath;
-  return `${API_BASE_URL}${imagePath}`;
+
+const getMediaUrl = (mediaPath: string) => {
+  if (!mediaPath) return "https://via.placeholder.com/800x600?text=No+Image";
+  if (mediaPath.startsWith("http")) return mediaPath;
+  return `${API_BASE_URL}${mediaPath}`;
+};
+
+const isVideo = (path: string) => {
+  if (!path) return false;
+  return /\.(mp4|webm|mov|avi)$/i.test(path);
+};
+
+// Flipkart-style Media Gallery Component
+const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const thumbnailContainerRef = useRef<HTMLDivElement>(null);
+
+  const handlePlayPause = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        videoRef.current.play();
+        setIsPlaying(true);
+      }
+    }
+  };
+
+  const handleThumbnailClick = (index: number) => {
+    setSelectedIndex(index);
+    setIsPlaying(false);
+    setImageError(false);
+  };
+
+  const scrollToThumbnail = (index: number) => {
+    if (thumbnailContainerRef.current) {
+      const thumbnail = thumbnailContainerRef.current.children[index] as HTMLElement;
+      if (thumbnail) {
+        thumbnail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  };
+
+  const handleNext = () => {
+    const newIndex = (selectedIndex + 1) % mediaFiles.length;
+    setSelectedIndex(newIndex);
+    scrollToThumbnail(newIndex);
+    setIsPlaying(false);
+    setImageError(false);
+  };
+
+  const handlePrev = () => {
+    const newIndex = (selectedIndex - 1 + mediaFiles.length) % mediaFiles.length;
+    setSelectedIndex(newIndex);
+    scrollToThumbnail(newIndex);
+    setIsPlaying(false);
+    setImageError(false);
+  };
+
+  const canScrollUp = selectedIndex > 0;
+  const canScrollDown = selectedIndex < mediaFiles.length - 1;
+
+  if (!mediaFiles || mediaFiles.length === 0) {
+    return (
+      <div className="w-full h-[500px] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center rounded-lg">
+        <div className="text-center">
+          <div className="text-6xl mb-3">🏠</div>
+          <span className="text-gray-500 font-medium">No Media Available</span>
+        </div>
+      </div>
+    );
+  }
+
+  const currentMedia = mediaFiles[selectedIndex];
+  const isCurrentVideo = isVideo(currentMedia);
+  const mediaUrl = getMediaUrl(currentMedia);
+
+  return (
+    <div className="flex gap-4">
+      {/* Thumbnail Sidebar - Flipkart Style */}
+      <div className="w-20 flex-shrink-0 relative">
+        {/* Up Arrow */}
+        {canScrollUp && (
+          <button
+            onClick={handlePrev}
+            className="absolute top-0 left-1/2 -translate-x-[60%] z-10 h-10 w-10 bg-gradient-to-b from-white via-white to-transparent flex items-start justify-center pt-1 hover:from-gray-50 rounded-full"
+          >
+            <ChevronLeft className="h-5 w-5 text-gray-700 rotate-90" />
+          </button>
+        )}
+
+        <div 
+          ref={thumbnailContainerRef}
+          className="flex flex-col gap-3 overflow-y-auto max-h-[500px] pr-2 pt-12 pb-12 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+          style={{ scrollbarWidth: 'thin' }}
+        >
+          {mediaFiles.map((media, idx) => {
+            const thumbUrl = getMediaUrl(media);
+            const isThumbVideo = isVideo(media);
+            
+            return (
+              <button
+                key={idx}
+                onClick={() => handleThumbnailClick(idx)}
+                className={`relative w-16 h-16 rounded-lg border-2 overflow-hidden flex-shrink-0 transition-all ${
+                  idx === selectedIndex 
+                    ? "border-primary shadow-md" 
+                    : "border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                {isThumbVideo ? (
+                  <div className="w-full h-full bg-black flex items-center justify-center">
+                    <Play className="h-5 w-5 text-white" />
+                  </div>
+                ) : (
+                  <img
+                    src={thumbUrl}
+                    alt={`Thumbnail ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = "https://via.placeholder.com/80x80?text=Img";
+                    }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Down Arrow */}
+        {canScrollDown && (
+          <button
+            onClick={handleNext}
+            className="absolute bottom-1 left-1/2 -translate-x-[78%] z-10 h-9 w-9 bg-gradient-to-t from-white via-white to-transparent flex items-end justify-center pb-1.5 hover:from-gray-50 rounded-full shadow-sm"
+          >
+            <ChevronLeft className="h-5 w-5 text-gray-700 -rotate-90" />
+          </button>
+        )}
+      </div>
+
+      {/* Main Display Area */}
+      <div className="flex-1 relative bg-white rounded-lg overflow-hidden border">
+        <div className="relative w-full h-[500px] bg-gray-50 flex items-center justify-center">
+          {isCurrentVideo ? (
+            <div className="relative w-full h-full bg-black">
+              <video
+                ref={videoRef}
+                key={mediaUrl}
+                src={mediaUrl}
+                className="w-full h-full object-contain"
+                muted
+                loop
+                playsInline
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onError={(e) => {
+                  console.error('Video load error:', mediaUrl);
+                  setImageError(true);
+                }}
+              />
+              {imageError ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                  <div className="text-center text-white">
+                    <div className="text-5xl mb-3">📹</div>
+                    <span>Video unavailable</span>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={handlePlayPause}
+                  className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition-all"
+                >
+                  <div className="p-5 rounded-full bg-white/95 hover:bg-white hover:scale-110 transition-all shadow-2xl">
+                    {isPlaying ? (
+                      <Pause className="h-10 w-10 text-black" />
+                    ) : (
+                      <Play className="h-10 w-10 text-black ml-1" />
+                    )}
+                  </div>
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              {!imageError ? (
+                <img
+                  src={mediaUrl}
+                  alt={`Media ${selectedIndex + 1}`}
+                  className="max-w-full max-h-full object-contain"
+                  onError={(e) => {
+                    console.error('Image load error:', mediaUrl);
+                    setImageError(true);
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
+                  <div className="text-center">
+                    <div className="text-5xl mb-3">📷</div>
+                    <span className="text-gray-600 font-medium">Image unavailable</span>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Counter */}
+          <div className="absolute bottom-4 right-4 px-3 py-1.5 bg-black/70 backdrop-blur-sm text-white text-sm font-medium rounded-full">
+            {selectedIndex + 1} / {mediaFiles.length}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const RoomDetails = () => {
@@ -36,6 +249,13 @@ const RoomDetails = () => {
     fetch(`${API_BASE_URL}/api/rooms/${id}`)
       .then(res => res.json())
       .then(data => {
+        if (data.media && Array.isArray(data.media) && data.media.length > 0) {
+          data.media = data.media;
+        } else if (data.image) {
+          data.media = [data.image];
+        } else {
+          data.media = [];
+        }
         setRoom(data);
         setLoading(false);
       })
@@ -44,8 +264,6 @@ const RoomDetails = () => {
         setLoading(false);
       });
   }, [id]);
-
-  // --- ACTIONS ---
 
   const handleBook = async () => {
     if (!user) {
@@ -72,7 +290,7 @@ const RoomDetails = () => {
       const data = await res.json();
       if (res.ok) {
         toast.success("Visit Scheduled! Room marked as Booked.");
-        navigate(0); // Refresh page
+        navigate(0);
       } else {
         toast.error(data.error || "Booking failed");
       }
@@ -184,7 +402,6 @@ const RoomDetails = () => {
     (room.ownerId._id === user.id || room.ownerId === user.id);
   const isBooker = user && room.bookedBy && user.id === room.bookedBy._id;
 
-  // Determine Back Link
   const backLink = isOwner ? "/my-listings" : "/listings";
   const backText = isOwner ? "Back to My Listings" : "Back to Listings";
 
@@ -200,16 +417,13 @@ const RoomDetails = () => {
         </Button>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* FIXED IMAGE DISPLAY: Auto height, object-contain, no cropping */}
-            <Card className="overflow-hidden border-0 shadow-lg rounded-xl bg-black/5">
-               <img
-                  src={getImageUrl(room.image)}
-                  alt={room.name}
-                  className="w-full h-auto max-h-[75vh] object-contain mx-auto"
-                />
+            {/* Flipkart-style Media Gallery */}
+            <Card className="overflow-hidden border shadow-lg">
+              <CardContent className="p-6">
+                <MediaGallery mediaFiles={room.media || []} />
+              </CardContent>
             </Card>
 
             <div className="flex justify-between items-start px-1">
@@ -236,7 +450,6 @@ const RoomDetails = () => {
               </div>
             </div>
 
-            {/* OWNER: Booking Request Panel */}
             {isOwner && room.status === 'booked' && (
               <Card className="bg-blue-50 border-blue-200 shadow-sm">
                 <CardHeader className="pb-3"><CardTitle className="text-blue-700 text-lg">Booking Request</CardTitle></CardHeader>
@@ -259,7 +472,6 @@ const RoomDetails = () => {
             <Card className="shadow-md rounded-xl border-0">
               <CardContent className="p-6">
                 <Tabs defaultValue="overview" className="w-full">
-                  {/* FIXED: Restored the background color class 'bg-muted' so tabs are visible */}
                   <TabsList className="grid w-full grid-cols-3 mb-6 h-auto p-1 bg-muted rounded-lg">
                     <TabsTrigger value="overview" className="py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">Overview</TabsTrigger>
                     <TabsTrigger value="amenities" className="py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">Amenities</TabsTrigger>
@@ -319,13 +531,14 @@ const RoomDetails = () => {
           <div className="lg:col-span-1">
             <Card className="sticky top-24 shadow-xl border-t-4 border-t-primary rounded-xl overflow-hidden">
               <CardHeader className="bg-muted/20 pb-4">
-                <CardTitle>Owner Controls</CardTitle>
-                {isOwner && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Last updated: {new Date(room.updatedAt).toLocaleString()}
-                  </p>
-                )}
-                {!isOwner && (
+                {isOwner ? (
+                  <>
+                    <CardTitle>Owner Controls</CardTitle>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Last updated: {new Date(room.updatedAt).toLocaleString()}
+                    </p>
+                  </>
+                ) : (
                   <CardTitle>
                     {room.status === 'available' ? 'Book a Visit' : 'Status'}
                   </CardTitle>
@@ -333,7 +546,6 @@ const RoomDetails = () => {
               </CardHeader>
               <CardContent className="space-y-6 pt-6">
                 
-                {/* OWNER VIEW */}
                 {isOwner && room?._id ? (
                   <div className="space-y-6">
                     <div className="p-4 bg-primary/5 rounded-lg flex items-start gap-3">
@@ -368,7 +580,6 @@ const RoomDetails = () => {
                     </Button>
                   </div>
                 ) : (
-                  // USER VIEW
                   <>
                     {room.status === 'available' ? (
                       <>
@@ -445,4 +656,4 @@ const RoomDetails = () => {
   );
 };
 
-export default RoomDetails; 
+export default RoomDetails;

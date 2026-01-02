@@ -1,5 +1,4 @@
 import { useEffect, useState, useMemo } from "react";
-// FIX: Import useSearchParams
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Filter, MapPin, Star, Search, SlidersHorizontal, Heart, Loader2
@@ -22,12 +21,17 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import API_BASE_URL from "@/config/api";
 
-
-// Helper for image URLs
-const getImageUrl = (imagePath: string) => {
-  if (!imagePath) return "https://via.placeholder.com/400x300?text=No+Image";
-  if (imagePath.startsWith("http")) return imagePath; // External link
-  return `${API_BASE_URL}${imagePath}`; // Backend file via ENV
+const getMediaUrl = (mediaPath: string) => {
+  if (!mediaPath) {
+    return "https://via.placeholder.com/400x300?text=No+Image";
+  }
+  
+  if (mediaPath.startsWith("http://") || mediaPath.startsWith("https://")) {
+    return mediaPath;
+  }
+  
+  const cleanPath = mediaPath.startsWith('/') ? mediaPath : `/${mediaPath}`;
+  return `${API_BASE_URL}${cleanPath}`;
 };
 
 interface Room {
@@ -39,6 +43,7 @@ interface Room {
   occupancy: string;
   gender: string;
   image: string;
+  media?: string[];
   rating: number;
   reviews: number;
   status: 'available' | 'booked' | 'occupied';
@@ -46,15 +51,13 @@ interface Room {
 }
 
 const Listings = () => {
-  // FIX: Initialize search from URL
   const [searchParams] = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Filters
-  const [searchQuery, setSearchQuery] = useState(initialSearch); // Set initial state
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedArea, setSelectedArea] = useState<string>("all");
   const [selectedOccupancy, setSelectedOccupancy] = useState<string>("all");
   const [selectedGender, setSelectedGender] = useState<string>("all");
@@ -64,18 +67,30 @@ const Listings = () => {
   const [sortBy, setSortBy] = useState("recommended");
   const [favorites, setFavorites] = useState<string[]>([]);
 
-  // Removed hardcoded areas array as per instructions
-
   const amenitiesFilter = ["wifi", "ac", "parking", "laundry", "gym"];
 
-useEffect(() => {
+  useEffect(() => {
     fetch(`${API_BASE_URL}/api/rooms`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then(data => {
-        setRooms(data);
+        const roomsWithMedia = data.map((room: any) => ({
+          ...room,
+          media: room.media && Array.isArray(room.media) && room.media.length > 0 
+            ? room.media 
+            : room.image 
+              ? [room.image] 
+              : []
+        }));
+        
+        setRooms(roomsWithMedia);
 
-        if (Array.isArray(data) && data.length > 0) {
-          const prices = data.map((r: any) => r.price);
+        if (Array.isArray(roomsWithMedia) && roomsWithMedia.length > 0) {
+          const prices = roomsWithMedia.map((r: any) => r.price);
           const min = Math.min(...prices);
           const max = Math.max(...prices);
 
@@ -101,7 +116,6 @@ useEffect(() => {
     return Array.from(areaSet).sort();
   }, [rooms]);
 
-  // Sync search query if URL changes
   useEffect(() => {
     const query = searchParams.get("search");
     if (query !== null) {
@@ -288,55 +302,75 @@ useEffect(() => {
               </Card>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredRooms.map((room) => (
-                  <Card key={room._id} className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-                    <div className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100">
-                      <img
-                        src={getImageUrl(room.image)}
-                        alt={room.name}
-                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        onError={(e) => { (e.target as HTMLImageElement).src = "https://via.placeholder.com/400x300?text=Image+Error" }}
-                      />
-                      <button onClick={(e) => { e.preventDefault(); toggleFavorite(room._id); }} className="absolute top-3 right-3 p-2 rounded-full bg-background/80 backdrop-blur hover:bg-white transition-colors z-10">
-                        <Heart className={`h-4 w-4 ${favorites.includes(room._id) ? "fill-red-500 text-red-500" : "text-gray-700"}`} />
-                      </button>
-                      
-                      <div className="absolute top-3 left-3 flex flex-col gap-1 items-start">
-                        <Badge className="bg-primary text-white shadow-sm">{room.occupancy}</Badge>
-                        {room.status === 'booked' && (
-                          <Badge variant="destructive" className="shadow-sm">Booked / Reserved</Badge>
-                        )}
-                      </div>
-                    </div>
+                {filteredRooms.map((room) => {
+                  const coverImage = room.media && room.media.length > 0 ? room.media[0] : room.image;
 
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-semibold text-lg line-clamp-1">{room.name}</h3>
-                        <Badge variant="outline" className="text-xs">{room.gender}</Badge>
-                      </div>
-                      <div className="flex items-center text-sm text-muted-foreground mb-2">
-                        <MapPin className="h-3 w-3 mr-1" />
-                        <span className="line-clamp-1">{room.location}</span>
-                      </div>
-                      <div className="flex items-center mb-4">
-                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
-                        <span className="text-sm font-semibold mr-1">{room.rating || 4.5}</span>
-                        <span className="text-xs text-muted-foreground">({room.reviews || 0} reviews)</span>
-                      </div>
-                      <div className="flex items-center justify-between pt-3 border-t">
-                        <div>
-                          <div className="text-xl font-bold text-primary">₹{room.price.toLocaleString()}</div>
-                          <div className="text-xs text-muted-foreground">per month</div>
+                  return (
+                    <Link key={room._id} to={`/room/${room._id}`}>
+                      <Card className="group hover:shadow-2xl transition-all duration-300 overflow-hidden border bg-white relative">
+                        {/* Image Section */}
+                        <div className="relative w-full aspect-[4/3] overflow-hidden bg-gray-50">
+                          <img
+                            src={getMediaUrl(coverImage)}
+                            alt={room.name}
+                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                            onError={(e) => {
+                              e.currentTarget.src = "https://via.placeholder.com/400x300?text=No+Image";
+                            }}
+                          />
+                          
+                          {/* Favorite Button */}
+                          <button 
+                            onClick={(e) => { 
+                              e.preventDefault(); 
+                              toggleFavorite(room._id); 
+                            }} 
+                            className="absolute top-3 right-3 p-2 rounded-full bg-white hover:bg-gray-50 transition-all shadow-md z-10"
+                          >
+                            <Heart className={`h-4 w-4 ${favorites.includes(room._id) ? "fill-red-500 text-red-500" : "text-gray-600"}`} />
+                          </button>
                         </div>
-                        <Button asChild size="sm" className={room.status === 'booked' ? "bg-gray-500" : "bg-gradient-hero"}>
-                          <Link to={`/room/${room._id}`}>
-                            {room.status === 'booked' ? 'View (Reserved)' : 'View Details'}
-                          </Link>
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+
+                        {/* Content Section */}
+                        <CardContent className="p-4">
+                          <div className="mb-2">
+                            <h3 className="font-semibold text-base line-clamp-1 mb-1">{room.name}</h3>
+                            <div className="flex items-center text-xs text-muted-foreground mb-2">
+                              <MapPin className="h-3 w-3 mr-1" />
+                              <span className="line-clamp-1">{room.location}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 mb-3">
+                            <Badge variant="secondary" className="text-xs px-2 py-0.5">{room.occupancy}</Badge>
+                            <Badge variant="outline" className="text-xs px-2 py-0.5">{room.gender}</Badge>
+                            {room.status === 'booked' && (
+                              <Badge variant="destructive" className="text-xs px-2 py-0.5">Reserved</Badge>
+                            )}
+                          </div>
+
+                          <div className="flex items-center mb-3">
+                            <div className="flex items-center bg-green-50 px-2 py-1 rounded">
+                              <Star className="h-3 w-3 fill-green-600 text-green-600 mr-1" />
+                              <span className="text-xs font-semibold">{room.rating || 4.5}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground ml-2">({room.reviews || 0})</span>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-3 border-t">
+                            <div>
+                              <div className="text-xl font-bold">₹{room.price.toLocaleString()}</div>
+                              <div className="text-xs text-muted-foreground">per month</div>
+                            </div>
+                            <Button size="sm" variant={room.status === 'booked' ? "secondary" : "default"}>
+                              {room.status === 'booked' ? 'Reserved' : 'View'}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>

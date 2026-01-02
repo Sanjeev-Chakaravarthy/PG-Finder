@@ -1,294 +1,333 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { MapPin, Eye, Trash2, Loader2, PlusCircle, AlertCircle, RefreshCw } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  MapPin,
+  Star,
+  Edit,
+  Trash2,
+  Plus,
+  Loader2,
+  Eye,
+} from "lucide-react";
+import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { useAuth } from "@/context/AuthContext";
-import { toast } from "sonner";
 import API_BASE_URL from "@/config/api";
 
-const getImageUrl = (imagePath: string) => {
-  if (!imagePath) return "https://via.placeholder.com/400x300?text=No+Image";
-  if (imagePath.startsWith("http")) return imagePath;
-  const path = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-  return `${API_BASE_URL.replace(/\/$/, '')}${path}`;
+const getMediaUrl = (mediaPath: string) => {
+  if (!mediaPath) {
+    return "https://via.placeholder.com/400x300?text=No+Image";
+  }
+  
+  if (mediaPath.startsWith("http://") || mediaPath.startsWith("https://")) {
+    return mediaPath;
+  }
+  
+  const cleanPath = mediaPath.startsWith('/') ? mediaPath : `/${mediaPath}`;
+  return `${API_BASE_URL}${cleanPath}`;
 };
 
+interface Room {
+  _id: string;
+  name: string;
+  location: string;
+  area: string;
+  price: number;
+  occupancy: string;
+  gender: string;
+  image: string;
+  media?: string[];
+  rating: number;
+  reviews: number;
+  status: "available" | "booked" | "occupied";
+}
+
 const MyListings = () => {
-  const { token } = useAuth();
+  const { token, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [rooms, setRooms] = useState<any[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [retrying, setRetrying] = useState(false);
-
-  const fetchRooms = async (isRetry = false) => {
-    if (isRetry) {
-      setRetrying(true);
-    } else {
-      setLoading(true);
-    }
-    setError("");
-    
-    try {
-      const url = `${API_BASE_URL.replace(/\/$/, '')}/api/rooms/my-listings`;
-      console.log('Fetching from:', url);
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-      
-      const res = await fetch(url, {
-        headers: { 
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-      console.log('Response status:', res.status);
-
-      if (!res.ok) {
-        let errorText;
-        try {
-          const errorData = await res.json();
-          errorText = errorData.message || errorData.error || `Server error: ${res.status}`;
-        } catch {
-          errorText = await res.text() || `Server responded with status ${res.status}`;
-        }
-        console.error('Error response:', errorText);
-        throw new Error(errorText);
-      }
-
-      const contentType = res.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Server returned non-JSON response. Backend may be down.");
-      }
-
-      const data = await res.json();
-      console.log('Received data:', data);
-
-      // Handle different response formats
-      if (Array.isArray(data)) {
-        setRooms(data);
-      } else if (data.rooms && Array.isArray(data.rooms)) {
-        setRooms(data.rooms);
-      } else if (data.data && Array.isArray(data.data)) {
-        setRooms(data.data);
-      } else if (data.success === false) {
-        throw new Error(data.message || "Failed to fetch listings");
-      } else {
-        console.error('Unexpected data format:', data);
-        setRooms([]);
-        setError("Unexpected response format from server.");
-      }
-    } catch (err) {
-      console.error('Fetch error:', err);
-      setRooms([]);
-      
-      if (err instanceof Error) {
-        if (err.name === 'AbortError') {
-          setError("Request timed out. The server might be sleeping on Render's free tier. Please wait 30-60 seconds and try again.");
-        } else if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
-          setError("Cannot connect to server. If using Render free tier, the server may be sleeping. Please wait 30-60 seconds for it to wake up, then click 'Retry'.");
-        } else {
-          setError(err.message);
-        }
-      } else {
-        setError("An unexpected error occurred while loading listings.");
-      }
-    } finally {
-      setLoading(false);
-      setRetrying(false);
-    }
-  };
 
   useEffect(() => {
-    if (token) {
-      fetchRooms();
-    } else {
-      setLoading(false);
-      setError("Please login to view your listings.");
-    }
-  }, [token]);
+    if (authLoading) return;
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this listing?")) return;
-    
+    if (!user || user.role !== "owner") {
+      navigate("/");
+      return;
+    }
+
+    fetchMyRooms();
+  }, [user, authLoading, token, navigate]);
+
+  const fetchMyRooms = async () => {
     try {
-      const url = `${API_BASE_URL.replace(/\/$/, '')}/api/rooms/${id}`;
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
-      
-      const res = await fetch(url, {
-        method: "DELETE",
-        headers: { 
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        signal: controller.signal
+      const res = await fetch(`${API_BASE_URL}/api/rooms/my-listings`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      clearTimeout(timeoutId);
-
       if (res.ok) {
-        toast.success("Listing deleted successfully");
-        fetchRooms();
+        const data = await res.json();
+        
+        const roomsWithMedia = data.map((room: any) => ({
+          ...room,
+          media: room.media && Array.isArray(room.media) && room.media.length > 0 
+            ? room.media 
+            : room.image 
+              ? [room.image] 
+              : []
+        }));
+        
+        setRooms(roomsWithMedia);
       } else {
-        let errorText;
-        try {
-          const errorData = await res.json();
-          errorText = errorData.message || errorData.error || "Failed to delete";
-        } catch {
-          errorText = await res.text() || "Failed to delete";
-        }
-        toast.error(errorText);
+        toast.error("Failed to load your listings");
       }
-    } catch (e) {
-      console.error('Delete error:', e);
-      if (e instanceof Error && e.name === 'AbortError') {
-        toast.error("Request timed out. Please try again.");
-      } else {
-        toast.error("Network error while deleting. Please try again.");
-      }
+    } catch (error) {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleDelete = async (roomId: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/rooms/${roomId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        toast.success("Property deleted successfully");
+        setRooms(rooms.filter((room) => room._id !== roomId));
+      } else {
+        toast.error("Failed to delete property");
+      }
+    } catch (error) {
+      toast.error("Network error. Please try again.");
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "available":
+        return "bg-green-500";
+      case "booked":
+        return "bg-yellow-500";
+      case "occupied":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       <Header />
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">My Listings</h1>
-          <Button asChild>
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">My Listings</h1>
+            <p className="text-muted-foreground">
+              Manage your property listings and bookings
+            </p>
+          </div>
+          <Button
+            asChild
+            size="lg"
+            className="bg-gradient-hero shadow-glow w-full md:w-auto"
+          >
             <Link to="/add-room">
-              <PlusCircle className="mr-2 h-4 w-4" /> Add New Property
+              <Plus className="h-5 w-5 mr-2" />
+              Add New Property
             </Link>
           </Button>
         </div>
 
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg mb-4">
-            <div className="flex items-start">
-              <AlertCircle className="mr-3 h-5 w-5 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <div className="font-semibold mb-1">Connection Error</div>
-                <div className="text-sm mb-2">{error}</div>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={() => fetchRooms(true)}
-                  disabled={retrying}
-                  className="mt-2"
-                >
-                  {retrying ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Retrying...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Retry Connection
-                    </>
-                  )}
-                </Button>
+        {rooms.length === 0 ? (
+          <Card className="p-12 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="p-4 rounded-full bg-muted">
+                <Plus className="h-8 w-8 text-muted-foreground" />
               </div>
+              <div>
+                <h3 className="text-xl font-semibold mb-2">
+                  No listings yet
+                </h3>
+                <p className="text-muted-foreground mb-6">
+                  Start by adding your first property to the platform
+                </p>
+              </div>
+              <Button asChild className="bg-gradient-hero">
+                <Link to="/add-room">
+                  <Plus className="h-5 w-5 mr-2" />
+                  Add Your First Property
+                </Link>
+              </Button>
             </div>
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <Loader2 className="animate-spin h-10 w-10 text-primary mb-4" />
-            <p className="text-muted-foreground text-sm">Loading your listings...</p>
-            <p className="text-muted-foreground text-xs mt-2">
-              If using Render free tier, initial load may take 30-60 seconds
-            </p>
-          </div>
-        ) : rooms.length === 0 && !error ? (
-          <div className="text-center py-20 bg-muted/30 rounded-lg border-2 border-dashed">
-            <h3 className="text-xl font-semibold mb-2">No Properties Listed</h3>
-            <p className="text-muted-foreground mb-4">Start earning by listing your first PG property</p>
-            <Button asChild>
-              <Link to="/add-room">List Your First PG</Link>
-            </Button>
-          </div>
+          </Card>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {rooms.map((room) => (
-              <Card
-                key={room._id}
-                className={`group overflow-hidden border transition-all ${
-                  room.status === "occupied"
-                    ? "opacity-75"
-                    : "hover:border-primary/50 hover:shadow-lg"
-                }`}
-              >
-                <div className="relative aspect-[4/3] bg-gray-100">
-                  <img 
-                    src={getImageUrl(room.image)} 
-                    alt={room.name} 
-                    className="absolute inset-0 w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = "https://via.placeholder.com/400x300?text=Image+Not+Found";
-                    }}
-                  />
-                  <div className="absolute top-3 right-3">
-                    <Badge className={room.status === 'occupied' ? "bg-blue-600" : "bg-green-500"}>
-                      {room.status}
-                    </Badge>
-                  </div>
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="font-bold text-lg truncate mb-1">{room.name}</h3>
-                  <div className="text-sm text-muted-foreground mb-3 flex items-center">
-                    <MapPin className="h-3 w-3 inline mr-1 flex-shrink-0" /> 
-                    <span className="truncate">{room.location}</span>
-                  </div>
-                  <div className="flex justify-between items-center mb-3">
-                    <div className="text-xl font-bold text-primary">
-                      ₹{typeof room.price === 'number' ? room.price.toLocaleString() : room.price}
+            {rooms.map((room) => {
+              const coverImage = room.media && room.media.length > 0 ? room.media[0] : room.image;
+
+              return (
+                <Card
+                  key={room._id}
+                  className="group hover:shadow-2xl transition-all duration-300 overflow-hidden border bg-white"
+                >
+                  {/* Image Section */}
+                  <div className="relative w-full aspect-[4/3] overflow-hidden bg-gray-50">
+                    <img
+                      src={getMediaUrl(coverImage)}
+                      alt={room.name}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      onError={(e) => {
+                        e.currentTarget.src = "https://via.placeholder.com/400x300?text=No+Image";
+                      }}
+                    />
+
+                    {/* Status Badge - Bottom Left */}
+                    <div className="absolute bottom-3 left-3 z-10">
+                      <Badge
+                        className={`${getStatusColor(
+                          room.status
+                        )} text-white shadow-md capitalize px-3 py-1`}
+                      >
+                        {room.status}
+                      </Badge>
                     </div>
                   </div>
-                  <div className="text-xs text-muted-foreground mb-3">
-                    Updated: {new Date(room.updatedAt).toLocaleDateString()}
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button asChild size="sm" variant="outline">
-                      <Link to={`/room/${room._id}`}>Manage</Link>
-                    </Button>
 
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      disabled={room.status === "occupied"}
-                      title={room.status === "occupied" ? "Occupied rooms cannot be edited" : "Edit listing"}
-                      onClick={() => {
-                        if (room.status !== "occupied") {
-                          navigate(`/edit-room/${room._id}`);
-                        }
-                      }}
-                    >
-                      {room.status === "occupied" ? "Locked" : "Edit"}
-                    </Button>
+                  {/* Content Section */}
+                  <CardContent className="p-4">
+                    <div className="mb-2">
+                      <h3 className="font-semibold text-base line-clamp-1 mb-1">
+                        {room.name}
+                      </h3>
+                      <div className="flex items-center text-xs text-muted-foreground mb-2">
+                        <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
+                        <span className="line-clamp-1">{room.location}</span>
+                      </div>
+                    </div>
 
-                    <Button 
-                      size="sm" 
-                      variant="destructive" 
-                      onClick={() => handleDelete(room._id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="flex items-center gap-2 mb-3">
+                      <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                        {room.occupancy}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs px-2 py-0.5">
+                        {room.gender}
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center mb-3">
+                      <div className="flex items-center bg-green-50 px-2 py-1 rounded">
+                        <Star className="h-3 w-3 fill-green-600 text-green-600 mr-1" />
+                        <span className="text-xs font-semibold">
+                          {room.rating || 4.5}
+                        </span>
+                      </div>
+                      <span className="text-xs text-muted-foreground ml-2">
+                        ({room.reviews || 0})
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t mb-4">
+                      <div>
+                        <div className="text-xl font-bold">
+                          ₹{room.price.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          per month
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                      >
+                        <Link to={`/room/${room._id}`}>
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Link>
+                      </Button>
+                      
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        disabled={room.status === "occupied"}
+                      >
+                        <Link to={`/edit-room/${room._id}`}>
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Link>
+                      </Button>
+                      
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="flex-1"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Are you sure?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will
+                              permanently delete your property listing.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(room._id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
