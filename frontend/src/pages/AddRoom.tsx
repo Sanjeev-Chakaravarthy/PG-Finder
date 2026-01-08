@@ -139,19 +139,22 @@ const AddRoom = () => {
 
         // Load existing media
         if (data.media && Array.isArray(data.media)) {
-          const existingMedia = data.media.map((mediaPath: string, idx: number) => ({
-            id: `existing-${idx}`,
-            type: mediaPath.match(/\.(mp4|mov|webm|avi)$/i) ? "video" : "image",
-            url: `${API_BASE_URL}${mediaPath}`,
-            isExisting: true,
-          }));
+          const existingMedia = data.media.map((mediaPath: string, idx: number) => {
+            const isAbsolute = mediaPath.startsWith("http");
+            return {
+              id: `existing-${idx}`,
+              type: mediaPath.match(/\.(mp4|mov|webm|avi)$/i) ? "video" : "image",
+              url: isAbsolute ? mediaPath : `${API_BASE_URL}${mediaPath}`,
+              isExisting: true,
+            };
+          });
           setMediaFiles(existingMedia);
         } else if (data.image) {
           // Fallback for old single image
           setMediaFiles([{
             id: "existing-0",
             type: "image",
-            url: `${API_BASE_URL}${data.image}`,
+            url: data.image.startsWith("http") ? data.image : `${API_BASE_URL}${data.image}`,
             isExisting: true,
           }]);
         }
@@ -823,12 +826,15 @@ const AddRoom = () => {
                         
                         // Restore media
                         if (initialData.media && Array.isArray(initialData.media)) {
-                          const restoredMedia = initialData.media.map((mediaPath: string, idx: number) => ({
-                            id: `existing-${idx}`,
-                            type: mediaPath.match(/\.(mp4|mov|webm|avi)$/i) ? "video" : "image",
-                            url: `${API_BASE_URL}${mediaPath}`,
-                            isExisting: true,
-                          }));
+                          const restoredMedia = initialData.media.map((mediaPath: string, idx: number) => {
+                            const isAbsolute = mediaPath.startsWith("http");
+                            return {
+                              id: `existing-${idx}`,
+                              type: mediaPath.match(/\.(mp4|mov|webm|avi)$/i) ? "video" : "image",
+                              url: isAbsolute ? mediaPath : `${API_BASE_URL}${mediaPath}`,
+                              isExisting: true,
+                            };
+                          });
                           setMediaFiles(restoredMedia);
                         }
                         
