@@ -1,7 +1,5 @@
 const Room = require('../models/Room');
 const Payment = require('../models/Payment');
-const fs = require('fs');
-const path = require('path');
 
 // @desc    Get rooms (Hides Occupied rooms from public)
 // @route   GET /api/rooms
@@ -126,11 +124,11 @@ exports.createRoom = async (req, res) => {
 
     // FIXED: Handle multiple media files with proper path formatting
     const mediaPaths = req.files?.media
-      ? req.files.media.map(file => `/uploads/${file.filename}`)
+      ? req.files.media.map(file => file.path)
       : [];
 
-    const qrPath = req.files?.paymentQr?.[0]
-      ? `/uploads/${req.files.paymentQr[0].filename}`
+    const qrPath = req.files?.paymentQr
+      ? req.files.paymentQr[0].path
       : '';
 
     let parsedFacilities = facilities ? JSON.parse(facilities) : {};
@@ -178,27 +176,6 @@ exports.deleteRoom = async (req, res) => {
       return res.status(401).json({ error: 'Not authorized' });
     }
 
-    // Delete all media files
-    if (room.media && Array.isArray(room.media)) {
-      room.media.forEach(mediaPath => {
-        try {
-          const filePath = path.join(__dirname, '..', mediaPath);
-          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-        } catch(e) { 
-          console.error("Media delete error", e); 
-        }
-      });
-    }
-
-    // Delete old single image if exists
-    if (room.image) {
-      try {
-        const filePath = path.join(__dirname, '..', room.image);
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      } catch(e) { 
-        console.error("Image delete error", e); 
-      }
-    }
 
     await room.deleteOne();
     res.json({ message: 'PG Removed Successfully' });
@@ -302,7 +279,7 @@ exports.payRent = async (req, res) => {
       amount,
       transactionId,
       month,
-      screenshot: `/uploads/${req.file.filename}`,
+      screenshot: req.file.path,
       status: "pending",
     });
 
@@ -420,26 +397,9 @@ exports.updateRoom = async (req, res) => {
       }
     }
 
-    // Delete removed media files
-    if (room.media && Array.isArray(room.media)) {
-      room.media.forEach(oldPath => {
-        if (!existingMediaArray.includes(oldPath)) {
-          const filePath = path.join(__dirname, '..', oldPath);
-          if (fs.existsSync(filePath)) {
-            try {
-              fs.unlinkSync(filePath);
-              console.log('🗑️ Deleted old media:', oldPath);
-            } catch (e) {
-              console.error("Failed to delete old media:", e);
-            }
-          }
-        }
-      });
-    }
-
     // Add newly uploaded media
     const newMediaPaths = req.files?.media
-      ? req.files.media.map(file => `/uploads/${file.filename}`)
+      ? req.files.media.map(file => file.path)
       : [];
 
     room.media = [...existingMediaArray, ...newMediaPaths];
@@ -448,12 +408,8 @@ exports.updateRoom = async (req, res) => {
     console.log('✅ Updated room media:', room.media);
 
     // Update payment QR
-    if (req.files?.paymentQr?.[0]) {
-      if (room.paymentQr) {
-        const oldQrPath = path.join(__dirname, "..", room.paymentQr);
-        if (fs.existsSync(oldQrPath)) fs.unlinkSync(oldQrPath);
-      }
-      room.paymentQr = `/uploads/${req.files.paymentQr[0].filename}`;
+    if (req.files?.paymentQr) {
+      room.paymentQr = req.files.paymentQr[0].path;
     }
 
     room.editHistory = room.editHistory || [];

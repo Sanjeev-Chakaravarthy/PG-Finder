@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, MapPin, Star, Wifi, Wind, Utensils, Car, Dumbbell,
   ShowerHead, Shield, Check, Phone, MessageCircle, Loader2, Trash2, Settings,
-  Play, Pause, ChevronLeft, ChevronRight
+  Play, Pause, ChevronLeft, Volume2, VolumeX, RotateCcw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,13 +28,19 @@ const isVideo = (path: string) => {
   return /\.(mp4|webm|mov|avi)$/i.test(path);
 };
 
-// Flipkart-style Media Gallery Component
+// Flipkart-style Media Gallery Component with Enhanced Video Controls
 const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [showControls, setShowControls] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const thumbnailContainerRef = useRef<HTMLDivElement>(null);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout>();
 
   const handlePlayPause = () => {
     if (videoRef.current) {
@@ -52,6 +58,8 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
     setSelectedIndex(index);
     setIsPlaying(false);
     setImageError(false);
+    setCurrentTime(0);
+    resetControlsTimer();
   };
 
   const scrollToThumbnail = (index: number) => {
@@ -69,6 +77,8 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
     scrollToThumbnail(newIndex);
     setIsPlaying(false);
     setImageError(false);
+    setCurrentTime(0);
+    resetControlsTimer();
   };
 
   const handlePrev = () => {
@@ -77,7 +87,74 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
     scrollToThumbnail(newIndex);
     setIsPlaying(false);
     setImageError(false);
+    setCurrentTime(0);
+    resetControlsTimer();
   };
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      setCurrentTime(videoRef.current.currentTime);
+      setDuration(videoRef.current.duration);
+    }
+  };
+
+  const handleSeek = (value: number) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = value;
+      setCurrentTime(value);
+    }
+  };
+
+  const handleVolumeToggle = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const handlePlaybackRateChange = (rate: number) => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = rate;
+      setPlaybackRate(rate);
+    }
+  };
+
+  const handleRestart = () => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      setCurrentTime(0);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  const resetControlsTimer = () => {
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+    setShowControls(true);
+    controlsTimeoutRef.current = setTimeout(() => {
+      if (isPlaying) {
+        setShowControls(false);
+      }
+    }, 3000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    resetControlsTimer();
+  }, [isPlaying]);
 
   const canScrollUp = selectedIndex > 0;
   const canScrollDown = selectedIndex < mediaFiles.length - 1;
@@ -97,15 +174,17 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
   const isCurrentVideo = isVideo(currentMedia);
   const mediaUrl = getMediaUrl(currentMedia);
 
+  // Calculate progress percentage
+  const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
+
   return (
     <div className="flex gap-4">
       {/* Thumbnail Sidebar - Flipkart Style */}
       <div className="w-20 flex-shrink-0 relative">
-        {/* Up Arrow */}
         {canScrollUp && (
           <button
             onClick={handlePrev}
-            className="absolute top-0 left-1/2 -translate-x-[60%] z-10 h-10 w-10 bg-gradient-to-b from-white via-white to-transparent flex items-start justify-center pt-1 hover:from-gray-50 rounded-full"
+            className="absolute top-0 left-1/2 -translate-x-[65%] z-10 h-10 w-10 bg-gradient-to-b from-white via-white to-transparent flex items-start justify-center pt-1 hover:from-gray-50 rounded-full"
           >
             <ChevronLeft className="h-5 w-5 text-gray-700 rotate-90" />
           </button>
@@ -131,8 +210,13 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
                 }`}
               >
                 {isThumbVideo ? (
-                  <div className="w-full h-full bg-black flex items-center justify-center">
+                  <div className="w-full h-full bg-black flex items-center justify-center relative">
                     <Play className="h-5 w-5 text-white" />
+                    <div className="absolute bottom-1 right-1">
+                      <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                        <Play className="h-2 w-2 text-white" />
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <img
@@ -149,7 +233,6 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
           })}
         </div>
 
-        {/* Down Arrow */}
         {canScrollDown && (
           <button
             onClick={handleNext}
@@ -160,26 +243,32 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
         )}
       </div>
 
-      {/* Main Display Area */}
+      {/* Main Display Area - Fixed to fill entire space without side spacing */}
       <div className="flex-1 relative bg-white rounded-lg overflow-hidden border">
-        <div className="relative w-full h-[500px] bg-gray-50 flex items-center justify-center">
+        <div className="relative w-full h-[500px] bg-black">
           {isCurrentVideo ? (
-            <div className="relative w-full h-full bg-black">
+            <div className="relative w-full h-full group">
               <video
                 ref={videoRef}
                 key={mediaUrl}
                 src={mediaUrl}
-                className="w-full h-full object-contain"
-                muted
+                className="w-full h-full"
+                style={{ objectFit: 'cover' }}
+                muted={isMuted}
                 loop
                 playsInline
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={(e) => {
+                  setDuration(e.currentTarget.duration);
+                }}
                 onError={(e) => {
                   console.error('Video load error:', mediaUrl);
                   setImageError(true);
                 }}
               />
+              
               {imageError ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
                   <div className="text-center text-white">
@@ -188,18 +277,117 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
                   </div>
                 </div>
               ) : (
-                <button
-                  onClick={handlePlayPause}
-                  className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition-all"
-                >
-                  <div className="p-5 rounded-full bg-white/95 hover:bg-white hover:scale-110 transition-all shadow-2xl">
-                    {isPlaying ? (
-                      <Pause className="h-10 w-10 text-black" />
-                    ) : (
-                      <Play className="h-10 w-10 text-black ml-1" />
-                    )}
+                <>
+                  {/* Enhanced Video Controls Overlay */}
+                  <div 
+                    className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent transition-opacity duration-300 ${
+                      showControls ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  >
+                    {/* Top Controls Bar */}
+                    <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center">
+                      <div className="flex items-center space-x-4">
+                        <button
+                          onClick={handlePlaybackRateChange.bind(null, playbackRate === 2 ? 1 : playbackRate === 1.5 ? 2 : 1.5)}
+                          className="px-3 py-1 bg-black/60 text-white rounded-lg text-sm font-medium hover:bg-black/80 transition-colors"
+                        >
+                          {playbackRate}x
+                        </button>
+                        <button
+                          onClick={handleRestart}
+                          className="p-2 bg-black/60 rounded-full hover:bg-black/80 transition-colors"
+                          title="Restart"
+                        >
+                          <RotateCcw className="h-5 w-5 text-white" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Center Play/Pause Button */}
+                    <button
+                      onClick={handlePlayPause}
+                      className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 p-5 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all group-hover:scale-110"
+                    >
+                      <div className="p-4 rounded-full bg-white/95 hover:bg-white hover:scale-110 transition-all shadow-2xl">
+                        {isPlaying ? (
+                          <Pause className="h-10 w-10 text-black" />
+                        ) : (
+                          <Play className="h-10 w-10 text-black ml-1" />
+                        )}
+                      </div>
+                    </button>
+
+                    {/* Bottom Controls Bar */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 space-y-3">
+                      {/* Progress Bar - Custom Implementation */}
+                      <div className="w-full">
+                        <div 
+                          className="relative w-full h-1 bg-white/30 rounded-full overflow-hidden cursor-pointer"
+                          onClick={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const percent = (e.clientX - rect.left) / rect.width;
+                            const newTime = percent * duration;
+                            handleSeek(newTime);
+                          }}
+                        >
+                          {/* Filled Progress Line */}
+                          <div 
+                            className="absolute left-0 top-0 h-full bg-orange-500 rounded-full"
+                            style={{ width: `${progressPercentage}%` }}
+                          />
+                          
+                          {/* Progress Thumb */}
+                          <div 
+                            className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-orange-500 rounded-full shadow-lg transform -translate-x-1/2 cursor-pointer hover:scale-125 transition-transform"
+                            style={{ left: `${progressPercentage}%` }}
+                          />
+                        </div>
+                        
+                        {/* Time Display */}
+                        <div className="flex justify-between text-white text-xs mt-2">
+                          <span>{formatTime(currentTime)}</span>
+                          <span>{formatTime(duration)}</span>
+                        </div>
+                      </div>
+
+                      {/* Bottom Controls - Removed navigation arrows */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <button
+                            onClick={handlePlayPause}
+                            className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                          >
+                            {isPlaying ? (
+                              <Pause className="h-6 w-6 text-white" />
+                            ) : (
+                              <Play className="h-6 w-6 text-white ml-0.5" />
+                            )}
+                          </button>
+                          <button
+                            onClick={handleVolumeToggle}
+                            className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                          >
+                            {isMuted ? (
+                              <VolumeX className="h-6 w-6 text-white" />
+                            ) : (
+                              <Volume2 className="h-6 w-6 text-white" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </button>
+
+                  {/* Mini Play/Pause Button (always visible when controls are hidden) */}
+                  {!showControls && isPlaying && (
+                    <button
+                      onClick={handlePlayPause}
+                      className="absolute bottom-4 left-4 p-2 rounded-full bg-black/60 hover:bg-black/80 transition-colors"
+                    >
+                      <Pause className="h-5 w-5 text-white" />
+                    </button>
+                  )}
+                </>
               )}
             </div>
           ) : (
@@ -208,7 +396,7 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
                 <img
                   src={mediaUrl}
                   alt={`Media ${selectedIndex + 1}`}
-                  className="max-w-full max-h-full object-contain"
+                  className="w-full h-full object-cover"
                   onError={(e) => {
                     console.error('Image load error:', mediaUrl);
                     setImageError(true);
@@ -224,11 +412,6 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
               )}
             </>
           )}
-
-          {/* Counter */}
-          <div className="absolute bottom-4 right-4 px-3 py-1.5 bg-black/70 backdrop-blur-sm text-white text-sm font-medium rounded-full">
-            {selectedIndex + 1} / {mediaFiles.length}
-          </div>
         </div>
       </div>
     </div>
