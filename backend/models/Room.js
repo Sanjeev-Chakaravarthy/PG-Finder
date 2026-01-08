@@ -45,8 +45,6 @@ const roomSchema = new mongoose.Schema({
     cleaning: { type: Boolean, default: false },
     security: { type: Boolean, default: false },
   },
-  rating: { type: Number, default: 0 },
-  reviews: { type: Number, default: 0 },
   status: { 
     type: String, 
     enum: ['available', 'booked', 'occupied'], 

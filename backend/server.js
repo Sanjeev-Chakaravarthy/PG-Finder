@@ -81,8 +81,6 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Serve Uploads Folder
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health check endpoint (important for Render)
 app.get('/health', (req, res) => {
@@ -145,7 +143,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`🔒 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🌍 Allowed CORS origins:`, allowedOrigins);
-  console.log(`📁 Upload directory: ${path.join(__dirname, 'uploads')}`);
 });
 
 module.exports = app;

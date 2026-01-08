@@ -184,7 +184,7 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
         {canScrollUp && (
           <button
             onClick={handlePrev}
-            className="absolute top-0 left-1/2 -translate-x-[60%] z-10 h-10 w-10 bg-gradient-to-b from-white via-white to-transparent flex items-start justify-center pt-1 hover:from-gray-50 rounded-full"
+            className="absolute top-0 left-1/2 -translate-x-[65%] z-10 h-10 w-10 bg-gradient-to-b from-white via-white to-transparent flex items-start justify-center pt-1 hover:from-gray-50 rounded-full"
           >
             <ChevronLeft className="h-5 w-5 text-gray-700 rotate-90" />
           </button>
@@ -393,18 +393,15 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
           ) : (
             <>
               {!imageError ? (
-                <div className="w-full h-full flex items-center justify-center bg-white">
-                  <img
-                    src={mediaUrl}
-                    alt={`Media ${selectedIndex + 1}`}
-                    className="w-full h-full"
-                    style={{ objectFit: 'contain', backgroundColor: 'white' }}
-                    onError={(e) => {
-                      console.error('Image load error:', mediaUrl);
-                      setImageError(true);
-                    }}
-                  />
-                </div>
+                <img
+                  src={mediaUrl}
+                  alt={`Media ${selectedIndex + 1}`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error('Image load error:', mediaUrl);
+                    setImageError(true);
+                  }}
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
                   <div className="text-center">
