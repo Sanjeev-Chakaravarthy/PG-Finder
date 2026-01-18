@@ -28,7 +28,6 @@ const isVideo = (path: string) => {
   return /\.(mp4|webm|mov|avi)$/i.test(path);
 };
 
-// Flipkart-style Media Gallery Component with Enhanced Video Controls
 const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -161,7 +160,7 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
 
   if (!mediaFiles || mediaFiles.length === 0) {
     return (
-      <div className="w-full h-[500px] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center rounded-lg">
+      <div className="w-full h-[400px] sm:h-[500px] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center rounded-lg">
         <div className="text-center">
           <div className="text-6xl mb-3">🏠</div>
           <span className="text-gray-500 font-medium">No Media Available</span>
@@ -173,13 +172,10 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
   const currentMedia = mediaFiles[selectedIndex];
   const isCurrentVideo = isVideo(currentMedia);
   const mediaUrl = getMediaUrl(currentMedia);
-
-  // Calculate progress percentage
   const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
     <div className="flex gap-4">
-      {/* Thumbnail Sidebar - Flipkart Style */}
       <div className="w-20 flex-shrink-0 relative">
         {canScrollUp && (
           <button
@@ -192,7 +188,7 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
 
         <div 
           ref={thumbnailContainerRef}
-          className="flex flex-col gap-3 overflow-y-auto max-h-[500px] pr-2 pt-12 pb-12 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+          className="flex flex-col gap-3 overflow-y-auto max-h-[400px] sm:max-h-[500px] pr-2 pt-12 pb-12 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
           style={{ scrollbarWidth: 'thin' }}
         >
           {mediaFiles.map((media, idx) => {
@@ -243,16 +239,15 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
         )}
       </div>
 
-      {/* Main Display Area - Fixed to fill entire space without side spacing */}
       <div className="flex-1 relative bg-white rounded-lg overflow-hidden border">
-        <div className="relative w-full h-[500px] bg-white">
+        <div className="relative w-full h-[400px] sm:h-[500px] bg-white flex items-center justify-center">
           {isCurrentVideo ? (
             <div className="relative w-full h-full group bg-white">
               <video
                 ref={videoRef}
                 key={mediaUrl}
                 src={mediaUrl}
-                className="w-full h-full object-contain sm:object-cover"
+                className="w-full h-full object-cover"
                 muted={isMuted}
                 loop
                 playsInline
@@ -269,7 +264,7 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
               />
               
               {imageError ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-800 min-h-[400px] sm:min-h-[500px]">
                   <div className="text-center text-white">
                     <div className="text-5xl mb-3">📹</div>
                     <span>Video unavailable</span>
@@ -277,13 +272,11 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
                 </div>
               ) : (
                 <>
-                  {/* Enhanced Video Controls Overlay */}
                   <div 
                     className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent transition-opacity duration-300 ${
                       showControls ? 'opacity-100' : 'opacity-0'
                     }`}
                   >
-                    {/* Top Controls Bar */}
                     <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center">
                       <div className="flex items-center space-x-4">
                         <button
@@ -302,7 +295,6 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
                       </div>
                     </div>
 
-                    {/* Center Play/Pause Button */}
                     <button
                       onClick={handlePlayPause}
                       className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 p-5 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all group-hover:scale-110"
@@ -316,9 +308,7 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
                       </div>
                     </button>
 
-                    {/* Bottom Controls Bar */}
                     <div className="absolute bottom-0 left-0 right-0 p-4 space-y-3">
-                      {/* Progress Bar - Custom Implementation */}
                       <div className="w-full">
                         <div 
                           className="relative w-full h-1 bg-white/30 rounded-full overflow-hidden cursor-pointer"
@@ -329,27 +319,23 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
                             handleSeek(newTime);
                           }}
                         >
-                          {/* Filled Progress Line */}
                           <div 
                             className="absolute left-0 top-0 h-full bg-orange-500 rounded-full"
                             style={{ width: `${progressPercentage}%` }}
                           />
                           
-                          {/* Progress Thumb */}
                           <div 
                             className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-orange-500 rounded-full shadow-lg transform -translate-x-1/2 cursor-pointer hover:scale-125 transition-transform"
                             style={{ left: `${progressPercentage}%` }}
                           />
                         </div>
                         
-                        {/* Time Display */}
                         <div className="flex justify-between text-white text-xs mt-2">
                           <span>{formatTime(currentTime)}</span>
                           <span>{formatTime(duration)}</span>
                         </div>
                       </div>
 
-                      {/* Bottom Controls - Removed navigation arrows */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                           <button
@@ -377,7 +363,6 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
                     </div>
                   </div>
 
-                  {/* Mini Play/Pause Button (always visible when controls are hidden) */}
                   {!showControls && isPlaying && (
                     <button
                       onClick={handlePlayPause}
@@ -395,14 +380,14 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
                 <img
                   src={mediaUrl}
                   alt={`Media ${selectedIndex + 1}`}
-                  className="w-full h-full object-contain sm:object-cover"
+                  className="w-full h-full object-cover"
                   onError={(e) => {
                     console.error('Image load error:', mediaUrl);
                     setImageError(true);
                   }}
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
+                <div className="w-full min-h-[400px] sm:min-h-[500px] flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
                   <div className="text-center">
                     <div className="text-5xl mb-3">📷</div>
                     <span className="text-gray-600 font-medium">Image unavailable</span>
@@ -601,7 +586,6 @@ const RoomDetails = () => {
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             
-            {/* Flipkart-style Media Gallery */}
             <Card className="overflow-hidden border shadow-lg">
               <CardContent className="p-6">
                 <MediaGallery mediaFiles={room.media || []} />
