@@ -245,15 +245,14 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
 
       {/* Main Display Area - Fixed to fill entire space without side spacing */}
       <div className="flex-1 relative bg-white rounded-lg overflow-hidden border">
-        <div className="relative w-full h-[500px] bg-black">
+        <div className="relative w-full h-[500px] bg-white">
           {isCurrentVideo ? (
-            <div className="relative w-full h-full group">
+            <div className="relative w-full h-full group bg-white">
               <video
                 ref={videoRef}
                 key={mediaUrl}
                 src={mediaUrl}
-                className="w-full h-full"
-                style={{ objectFit: 'cover' }}
+                className="w-full h-full object-contain sm:object-cover"
                 muted={isMuted}
                 loop
                 playsInline
@@ -396,7 +395,7 @@ const MediaGallery = ({ mediaFiles }: { mediaFiles: string[] }) => {
                 <img
                   src={mediaUrl}
                   alt={`Media ${selectedIndex + 1}`}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain sm:object-cover"
                   onError={(e) => {
                     console.error('Image load error:', mediaUrl);
                     setImageError(true);
