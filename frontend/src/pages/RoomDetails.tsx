@@ -603,8 +603,6 @@ const RoomDetails = () => {
                    <Badge variant="secondary" className="px-3 py-1">{room.occupancy}</Badge>
                    <Badge variant="outline" className="px-3 py-1">{room.gender}</Badge>
                    <div className="flex items-center bg-yellow-50 px-2 py-1 rounded-md">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
-                      <span className="font-semibold text-sm">{room.rating || 4.5}</span>
                    </div>
                 </div>
               </div>
